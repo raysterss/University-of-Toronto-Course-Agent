@@ -57,7 +57,7 @@ structured course / program data (JSON)
 deterministic Python tools (src/tools.py, src/program_audit.py)
         │
         ▼
-tool registry (src/tool_registry.py) — 6 registered tools
+tool registry (src/tool_registry.py) — 7 registered tools
         │
         ▼
 bounded multi-step agent (src/agent.py) — ReAct loop, max 2 steps
@@ -85,7 +85,7 @@ performed by deterministic Python logic — not by the model.
 
 ## Reliability and evaluation
 
-The current test suite passes locally with **511 automated tests** (`python3 -m pytest`).
+The current test suite passes locally with **528 automated tests** (`python3 -m pytest`).
 
 **Core-5 evaluation batch** — a small curated set of 5 representative
 cases run against the real TokenHub model:
@@ -112,7 +112,7 @@ cases run against the real TokenHub model:
 │   ├── agent.py                       # Bounded multi-step ReAct loop
 │   ├── model.py                       # TencentTokenHubModel + MockModel
 │   ├── tools.py                       # Course lookup, prereqs, exclusions, term, recommendations
-│   ├── tool_registry.py              # 6 registered tools
+│   ├── tool_registry.py              # 7 registered tools
 │   ├── program_audit.py              # Deterministic program-progress audit engine
 │   └── mcp_server.py                 # MCP server stub
 ├── tests/
@@ -161,7 +161,7 @@ cp .env.example .env
 
 ```bash
 python3 -m pytest
-# 511 passed
+# 528 passed
 ```
 
 All tests use MockModel — no API keys or network calls required.
