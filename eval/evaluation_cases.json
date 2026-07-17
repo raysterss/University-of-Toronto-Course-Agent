@@ -1,0 +1,902 @@
+{
+  "meta": {
+    "version": "2.0",
+    "description": "Evaluation cases for the UofT Cognitive Science Computational Cognition Stream course planning agent. Expanded to ~30 cases covering 8 categories.",
+    "program_code": "ASMAJ1446A",
+    "program_name": "Cognitive Science Major — Science (Computational Cognition Stream)",
+    "purpose": "Each case defines a realistic student scenario and the behaviors the agent should exhibit. Evaluation checks whether the agent calls appropriate tools, warns about uncertainty, avoids hallucinating prerequisites, and respects program rules. Exact answer matching is NOT the goal.",
+    "created": "2026-07-09",
+    "updated": "2026-07-09"
+  },
+  "cases": [
+    {
+      "case_id": "recommend_ai_ml",
+      "category": "course_recommendation",
+      "title": "AI and machine learning course recommendation",
+      "description": "A student interested in AI and machine learning asks what Computational Cognition Stream pool courses they should consider. They have completed the standard first-year CS pathway and a statistics course.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall and Winter"
+      },
+      "completed_courses": ["CSC108H1", "CSC148H1", "STA237H1"],
+      "user_query": "I am interested in AI and machine learning courses for the Computational Cognition Stream. What should I consider?",
+      "expected_tools": ["recommend_courses_for_requirement"],
+      "expected_behaviors": [
+        "Calls recommend_courses_for_requirement with requirement_tag='computational_cognition_stream_pool'.",
+        "Passes the student's completed_courses for prerequisite checks.",
+        "Passes interests=['AI', 'machine learning'] or similar to rank AI/ML courses first.",
+        "Mentions specific AI/ML courses such as CSC311H1, CSC384H1, or CSC413H1 when they match.",
+        "Notes prerequisite_status for each recommended course.",
+        "Mentions the CSC 1.5-credit cap for 300-/400-level CSC courses if relevant.",
+        "Includes a verification reminder at the end."
+      ],
+      "failure_conditions": [
+        "Uses invalid argument names like 'requirement_description' instead of 'requirement_tag'.",
+        "Fails to include the student's completed_courses in the tool call.",
+        "Invented course codes or interest tags not in the data.",
+        "Omits the CSC program restriction note for 300-/400-level CSC courses.",
+        "Does not mention term availability (some pool courses have UNKNOWN terms)."
+      ]
+    },
+    {
+      "case_id": "recommend_neuroscience",
+      "category": "course_recommendation",
+      "title": "Neuroscience-focused pool course recommendation",
+      "description": "A student with psychology and CS background is interested in neuroscience courses within the Computational Cognition Stream pool. They need courses that match their interest but also want to know about prerequisite requirements.",
+      "student_profile": {
+        "year": 3,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["COG100H1", "CSC108H1", "CSC148H1", "PSY100H1", "PSY270H1"],
+      "user_query": "I'm interested in neuroscience courses in the Computational Cognition Stream pool. I've taken PSY100H1 and PSY270H1. What should I look at?",
+      "expected_tools": ["recommend_courses_for_requirement"],
+      "expected_behaviors": [
+        "Calls recommend_courses_for_requirement with interests related to neuroscience.",
+        "Passes the student's completed_courses for prerequisite eligibility checks.",
+        "Mentions courses with neuroscience relevance such as PSY290H1, CSB334H1, or COG341H1.",
+        "Notes prerequisite_status for each recommended course.",
+        "Warns about courses with complex prerequisites (e.g., CSB334H1 has multi-component prereqs).",
+        "Mentions UNKNOWN term availability where applicable."
+      ],
+      "failure_conditions": [
+        "Recommends courses without checking prerequisites against completed_courses.",
+        "Ignores complex prerequisite notes on courses like CSB334H1.",
+        "Fails to mention that some pool courses have UNKNOWN term availability."
+      ]
+    },
+    {
+      "case_id": "recommend_300_level",
+      "category": "course_recommendation",
+      "title": "300+ level pool courses for upper-year student",
+      "description": "A third-year student needs to fulfill the 1.0 credit at 300+ level requirement in the pool. They need to find eligible upper-year courses.",
+      "student_profile": {
+        "year": 3,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall and Winter"
+      },
+      "completed_courses": ["COG100H1", "COG200H1", "CSC108H1", "CSC148H1", "PSY270H1", "STA237H1", "MAT135H1", "MAT136H1"],
+      "user_query": "I need at least 1.0 credit at the 300 level or higher from the Computational Cognition Stream pool. Which upper-year courses can I take given my completed courses?",
+      "expected_tools": ["recommend_courses_for_requirement"],
+      "expected_behaviors": [
+        "Calls recommend_courses_for_requirement for the Computational Cognition Stream pool.",
+        "Passes completed_courses for prerequisite eligibility.",
+        "Highlights 300- and 400-level courses.",
+        "Notes prerequisite_status for upper-year courses (many have complex prerequisites).",
+        "Mentions the CSC 1.5-credit cap for 300-/400-level CSC courses.",
+        "Warns about courses with manual_review_needed prerequisites."
+      ],
+      "failure_conditions": [
+        "Recommends upper-year CSC courses without mentioning the 1.5-credit cap.",
+        "Treats manual_review_needed courses as definitely eligible.",
+        "Fails to distinguish between 200-level and 300+ level courses."
+      ]
+    },
+    {
+      "case_id": "recommend_no_match",
+      "category": "course_recommendation",
+      "title": "Interest filtering with no matching courses",
+      "description": "A student asks for courses matching an obscure interest that has no matches in the pool. The agent should still return results but note the lack of matches.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["CSC108H1", "CSC148H1"],
+      "user_query": "Are there any courses about quantum computing or quantum cognition in the Computational Cognition Stream pool?",
+      "expected_tools": ["recommend_courses_for_requirement"],
+      "expected_behaviors": [
+        "Calls recommend_courses_for_requirement with interests like 'quantum computing' or 'quantum cognition'.",
+        "Still returns the full pool of courses (not an empty list).",
+        "Notes that no courses specifically matched the quantum interests.",
+        "Suggests related or available courses as alternatives."
+      ],
+      "failure_conditions": [
+        "Returns an empty list instead of the full pool.",
+        "Fabricates quantum computing courses that don't exist in the data.",
+        "Claims there are quantum-related courses when there aren't."
+      ]
+    },
+    {
+      "case_id": "recommend_completed_many",
+      "category": "course_recommendation",
+      "title": "Recommendation for a student with many completed prerequisites",
+      "description": "A well-prepared student with extensive CS and math background asks for pool recommendations. Many courses should show as eligible.",
+      "student_profile": {
+        "year": 3,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["COG100H1", "COG200H1", "CSC108H1", "CSC148H1", "CSC165H1", "CSC207H1", "CSC236H1", "MAT135H1", "MAT136H1", "MAT223H1", "STA237H1", "PSY270H1"],
+      "user_query": "I've completed most of the CS and math prerequisites. What Computational Cognition Stream courses am I eligible for?",
+      "expected_tools": ["recommend_courses_for_requirement"],
+      "expected_behaviors": [
+        "Calls recommend_courses_for_requirement for the pool.",
+        "Many courses should show prerequisite_status='eligible' given the extensive completed list.",
+        "Still notes courses with complex prerequisites as manual_review_needed where applicable.",
+        "Mentions the CSC 1.5-credit cap when discussing upper-year CSC courses.",
+        "Helps the student prioritize among eligible courses."
+      ],
+      "failure_conditions": [
+        "Marks courses as not_eligible when the student clearly meets prerequisites.",
+        "Fails to mention the CSC credit cap.",
+        "Overwhelms the student with all 65 courses without prioritization."
+      ]
+    },
+
+    {
+      "case_id": "prereq_simple_eligible",
+      "category": "prerequisite_reasoning",
+      "title": "Simple prerequisite — student is clearly eligible",
+      "description": "A student who completed CSC108H1, CSC148H1, and CSC165H1 asks about CSC207H1. The prerequisites are straightforward (CSC148H1) with a simple prerequisite note about programming experience.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["CSC108H1", "CSC148H1", "CSC165H1"],
+      "user_query": "Can I take CSC207H1 this Fall? I've done CSC108H1, CSC148H1, and CSC165H1.",
+      "expected_tools": ["check_prerequisites"],
+      "expected_behaviors": [
+        "Calls check_prerequisites for CSC207H1.",
+        "Reports that the student is eligible (CSC148H1 satisfied).",
+        "Notes that CSC207H1 excludes CSC207H5 and CSCB07H3 (UTM/UTSC equivalents).",
+        "Mentions term availability if possible."
+      ],
+      "failure_conditions": [
+        "Returns not_eligible when the student clearly has CSC148H1.",
+        "Fails to check exclusions.",
+        "Hallucinates additional prerequisites beyond CSC148H1."
+      ]
+    },
+    {
+      "case_id": "prereq_csc311_complex",
+      "category": "prerequisite_reasoning",
+      "title": "Prerequisite check for CSC311H1 — eligible with complex recommended prep",
+      "description": "A student who has completed CSC108H1, CSC148H1, MAT135H1, MAT136H1, and STA237H1 asks about CSC311H1. The simple prerequisites are satisfied, but the course has recommended preparation (MAT235/MAT237, STA238/STA257/STA261), so the agent should flag manual_review_needed.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["CSC108H1", "CSC148H1", "MAT135H1", "MAT136H1", "STA237H1"],
+      "user_query": "Can I take CSC311H1 this Fall? I've finished CSC108H1, CSC148H1, MAT135H1, MAT136H1, and STA237H1.",
+      "expected_tools": ["check_prerequisites"],
+      "expected_behaviors": [
+        "Calls check_prerequisites for CSC311H1 with the student's completed courses.",
+        "Reports that simple prerequisites (CSC148H1, MAT135H1/MAT136H1, STA237H1) are satisfied.",
+        "Notes that the course has recommended preparation (MAT235/MAT237) and that prerequisite status may be manual_review_needed.",
+        "Checks term availability for Fall — reports whether CSC311H1 is offered in Fall.",
+        "Does not claim the student is guaranteed eligible without qualification."
+      ],
+      "failure_conditions": [
+        "Claims the student is definitely eligible without mentioning recommended preparation or prerequisite complexity.",
+        "Fails to check term availability.",
+        "Hallucinates prerequisites not in the course data (e.g., invents a CSC263 requirement)."
+      ]
+    },
+    {
+      "case_id": "prereq_missing_csc148",
+      "category": "prerequisite_reasoning",
+      "title": "Prerequisite check — missing CSC148H1",
+      "description": "A student without CSC148H1 asks about CSC384H1 (Introduction to Artificial Intelligence). The prerequisites require CSC148H1, so the agent should report not_eligible.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Winter"
+      },
+      "completed_courses": ["CSC108H1"],
+      "user_query": "I want to take CSC384H1 next Winter. I've only done CSC108H1 so far. Is that possible?",
+      "expected_tools": ["check_prerequisites"],
+      "expected_behaviors": [
+        "Calls check_prerequisites for CSC384H1.",
+        "Reports that CSC148H1 is required and the student has not completed it.",
+        "Returns a not_eligible or manual_review_needed status.",
+        "Does not suggest that CSC108H1 alone is sufficient."
+      ],
+      "failure_conditions": [
+        "Returns 'eligible' when CSC148H1 is missing.",
+        "Hallucinates alternate pathways that are not in the data.",
+        "Ignores the missing prerequisite entirely."
+      ]
+    },
+    {
+      "case_id": "prereq_complex_or_condition",
+      "category": "prerequisite_reasoning",
+      "title": "Complex prerequisite with OR conditions",
+      "description": "A student asks about STA238H1, which has a prerequisite note listing STA237H1/STA247H1/STA257H1 as alternatives (OR condition). The agent should recognize this complexity and not give a simple yes/no.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Winter"
+      },
+      "completed_courses": ["STA237H1", "MAT135H1", "MAT136H1"],
+      "user_query": "I have STA237H1. Can I take STA238H1 next Winter?",
+      "expected_tools": ["check_prerequisites"],
+      "expected_behaviors": [
+        "Calls check_prerequisites for STA238H1.",
+        "Notes that STA237H1 is one of the accepted prerequisites for STA238H1.",
+        "Acknowledges the prerequisite note complexity (multiple accepted courses).",
+        "Does not claim the student is ineligible when STA237H1 satisfies one path."
+      ],
+      "failure_conditions": [
+        "Returns not_eligible when STA237H1 is listed as an accepted prerequisite.",
+        "Fails to mention that the prerequisite has multiple accepted courses.",
+        "Invents additional requirements not in the data."
+      ]
+    },
+    {
+      "case_id": "prereq_grade_threshold",
+      "category": "prerequisite_reasoning",
+      "title": "Prerequisite with grade threshold",
+      "description": "A student asks about CSC111H1, which requires CSC110Y1 with a grade of 70% or higher. The prerequisite note includes a grade threshold that the agent should surface.",
+      "student_profile": {
+        "year": 1,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Winter"
+      },
+      "completed_courses": ["CSC110Y1"],
+      "user_query": "I finished CSC110Y1. Can I take CSC111H1 in Winter?",
+      "expected_tools": ["check_prerequisites"],
+      "expected_behaviors": [
+        "Calls check_prerequisites for CSC111H1.",
+        "Mentions the grade threshold (70% in CSC110Y1) from the prerequisite note.",
+        "Notes that this is a complex prerequisite requiring manual review.",
+        "Advises the student to verify their grade meets the threshold."
+      ],
+      "failure_conditions": [
+        "Reports simple 'eligible' without mentioning the 70% grade threshold.",
+        "Claims eligibility is guaranteed regardless of grade.",
+        "Ignores the prerequisite note entirely."
+      ]
+    },
+    {
+      "case_id": "prereq_multi_component",
+      "category": "prerequisite_reasoning",
+      "title": "Multi-component prerequisite — COG415H1",
+      "description": "A student asks about COG415H1, which has complex multi-component prerequisites: COG250Y1 (replaced by COG100H1+COG200H1), AND COG341H1/COG342H1 (one of), AND PSY370H1. The agent should break down the components.",
+      "student_profile": {
+        "year": 4,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Winter"
+      },
+      "completed_courses": ["COG100H1", "COG200H1", "COG341H1", "PSY370H1"],
+      "user_query": "Can I take COG415H1? I've completed COG100H1, COG200H1, COG341H1, and PSY370H1.",
+      "expected_tools": ["check_prerequisites"],
+      "expected_behaviors": [
+        "Calls check_prerequisites for COG415H1.",
+        "Notes that the prerequisite is complex with multiple components.",
+        "Mentions the COG250Y1 → COG100H1+COG200H1 replacement.",
+        "Checks whether COG341H1 satisfies the second component.",
+        "Reports manual_review_needed or explains the complexity."
+      ],
+      "failure_conditions": [
+        "Returns a simple 'eligible' without discussing the multi-component nature.",
+        "Fails to mention the COG250Y1 replacement.",
+        "Claims the student is ineligible when they appear to meet all components."
+      ]
+    },
+    {
+      "case_id": "prereq_csc_cap",
+      "category": "prerequisite_reasoning",
+      "title": "CSC 300/400-level credit cap awareness",
+      "description": "A non-CS-major student asks about taking multiple upper-year CSC courses. The agent should surface the 1.5-credit cap for 300-/400-level CSC/ECE courses that applies to non-CS-major students.",
+      "student_profile": {
+        "year": 3,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["CSC108H1", "CSC148H1", "MAT135H1", "MAT136H1", "STA237H1"],
+      "user_query": "I want to take CSC311H1, CSC384H1, and CSC413H1 this year. They're all in the Computational Cognition Stream pool. Can I do that?",
+      "expected_tools": ["check_prerequisites"],
+      "expected_behaviors": [
+        "Checks prerequisites for each course (at minimum one of them).",
+        "Warns about the 1.5-credit cap on 300-/400-level CSC courses for non-CS-major students.",
+        "Notes that three half-credit upper-year CSC courses total 1.5 credits (which is at the cap).",
+        "Advises the student to verify with official sources.",
+        "Does not claim that the student is within the cap without qualification."
+      ],
+      "failure_conditions": [
+        "Does not mention the 1.5-credit CSC cap at all.",
+        "Claims the student can freely take all three courses without discussing the restriction.",
+        "Incorrectly states the cap amount (e.g., says 2.0 credits instead of 1.5)."
+      ]
+    },
+
+    {
+      "case_id": "exclusion_csc108_csc148",
+      "category": "exclusion_conflicts",
+      "title": "Exclusion conflict — CSC108H1 and CSC148H1",
+      "description": "A student who completed CSC148H1 asks about taking CSC108H1. CSC108H1 excludes CSC148H1 (among others), so the agent should flag this.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Winter"
+      },
+      "completed_courses": ["CSC108H1", "CSC148H1"],
+      "user_query": "Can I take CSC108H1 again? I already took it but I want to retake it for a better grade.",
+      "expected_tools": ["check_exclusions"],
+      "expected_behaviors": [
+        "Calls check_exclusions for CSC108H1 with the student's completed courses.",
+        "Notes that CSC108H1 excludes CSC148H1 (the student has both).",
+        "Warns the student about the exclusion or overlap.",
+        "Advises checking with academic advising about credit implications."
+      ],
+      "failure_conditions": [
+        "Says nothing about exclusions.",
+        "Encourages the student to take the course without checking exclusions."
+      ]
+    },
+    {
+      "case_id": "exclusion_sta237_sta247",
+      "category": "exclusion_conflicts",
+      "title": "Exclusion conflict — STA237H1 and STA247H1",
+      "description": "A student who completed STA237H1 asks about STA247H1. STA247H1 has STA237H1 as an exclusion, meaning taking both would be redundant.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["STA237H1", "MAT135H1", "MAT136H1"],
+      "user_query": "I already took STA237H1. Should I also take STA247H1 for a stronger stats background?",
+      "expected_tools": ["get_course_details"],
+      "expected_behaviors": [
+        "Calls get_course_details for STA247H1.",
+        "Notes that STA247H1 excludes STA237H1 — the courses overlap.",
+        "Advises that taking both may not count toward degree requirements.",
+        "Suggests checking with academic advising."
+      ],
+      "failure_conditions": [
+        "Recommends taking STA247H1 without noting the exclusion.",
+        "Fails to mention that STA237H1 and STA247H1 are mutually exclusive."
+      ]
+    },
+    {
+      "case_id": "exclusion_cog402_cog403",
+      "category": "exclusion_conflicts",
+      "title": "Exclusion conflict — capstone courses",
+      "description": "A student interested in multiple capstone courses asks about COG402H1 and COG403H1, which are mutually exclusive. The agent should flag that only one can count.",
+      "student_profile": {
+        "year": 4,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["COG100H1", "COG200H1", "CSC108H1", "CSC148H1", "PSY270H1", "STA237H1", "PHL342H1", "COG341H1"],
+      "user_query": "I'm interested in both COG402H1 and COG403H1 for my capstone. Can I take both?",
+      "expected_tools": ["get_course_details"],
+      "expected_behaviors": [
+        "Calls get_course_details for at least one of COG402H1 or COG403H1.",
+        "Notes the mutual exclusion between COG401H1, COG402H1, COG403H1, and COG404H1.",
+        "Advises that at most one of these capstone courses can be taken.",
+        "Discusses prerequisite requirements for the chosen course."
+      ],
+      "failure_conditions": [
+        "Recommends taking both without noting they are mutually exclusive.",
+        "Fails to check exclusions."
+      ]
+    },
+
+    {
+      "case_id": "term_fall_offered",
+      "category": "term_availability",
+      "title": "Course offered in Fall — simple check",
+      "description": "A student asks whether CSC165H1 is available in Fall. The course data lists Fall and Winter availability, so the agent should confirm.",
+      "student_profile": {
+        "year": 1,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["CSC108H1"],
+      "user_query": "Is CSC165H1 offered in Fall? I'm planning my first-year schedule.",
+      "expected_tools": ["get_course_details"],
+      "expected_behaviors": [
+        "Calls get_course_details for CSC165H1.",
+        "Reports that CSC165H1 is offered in Fall and Winter.",
+        "Mentions the corequisite (CSC108H1 or equivalent programming experience)."
+      ],
+      "failure_conditions": [
+        "Reports incorrect term availability.",
+        "Fails to check the corequisite requirement."
+      ]
+    },
+    {
+      "case_id": "term_unknown_cog260",
+      "category": "term_availability",
+      "title": "Course with UNKNOWN term availability",
+      "description": "A student asks about COG260H1, which has UNKNOWN term availability. The agent should not guess and should flag the uncertainty.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Winter"
+      },
+      "completed_courses": ["COG100H1", "CSC108H1"],
+      "user_query": "Is COG260H1 available in Winter? I want to take it next term.",
+      "expected_tools": ["get_course_details"],
+      "expected_behaviors": [
+        "Calls get_course_details for COG260H1.",
+        "Reports that term availability is UNKNOWN.",
+        "Does not guess or invent a term.",
+        "Advises the student to check the official timetable."
+      ],
+      "failure_conditions": [
+        "Claims COG260H1 is offered in Winter when data says UNKNOWN.",
+        "Fails to mention the UNKNOWN status.",
+        "Guesses term availability based on similar courses."
+      ]
+    },
+    {
+      "case_id": "term_not_offered",
+      "category": "term_availability",
+      "title": "Checking if a Fall-only course is available in Winter",
+      "description": "A student asks about taking a course in a term when it may not be offered. The agent should report the actual availability from the data, even if it's not the term the student wants.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Winter"
+      },
+      "completed_courses": ["COG100H1", "CSC108H1"],
+      "user_query": "Is PHL342H1 offered in Winter? I need it for my program requirements.",
+      "expected_tools": ["get_course_details"],
+      "expected_behaviors": [
+        "Calls get_course_details for PHL342H1.",
+        "Reports actual term availability from the data.",
+        "If not offered in Winter, suggests planning for a different term.",
+        "Mentions the prerequisite (COG100H1) which the student has completed."
+      ],
+      "failure_conditions": [
+        "Inventing term availability that contradicts the course data.",
+        "Failing to report the prerequisite requirement.",
+        "Telling the student to take it in Winter if the data says otherwise."
+      ]
+    },
+    {
+      "case_id": "term_many_unknown",
+      "category": "term_availability",
+      "title": "Planning around many UNKNOWN term courses",
+      "description": "A student notices that many pool courses have UNKNOWN term availability and asks for guidance. The agent should acknowledge this gap in the data.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["COG100H1", "CSC108H1", "CSC148H1"],
+      "user_query": "Why do so many courses in the pool show UNKNOWN term? How do I plan my schedule?",
+      "expected_tools": ["recommend_courses_for_requirement"],
+      "expected_behaviors": [
+        "Calls recommend_courses_for_requirement or accesses course data.",
+        "Acknowledges that many courses have UNKNOWN term availability in the data.",
+        "Explains that UNKNOWN means the information was not confirmed from the Academic Calendar.",
+        "Advises checking the official UofT timetable for actual term offerings."
+      ],
+      "failure_conditions": [
+        "Claims that UNKNOWN means the course is not offered.",
+        "Makes up term availability for UNKNOWN courses.",
+        "Does not direct the student to the official timetable."
+      ]
+    },
+
+    {
+      "case_id": "breadth_unknown_lin232",
+      "category": "breadth_requirement",
+      "title": "Breadth requirement with UNKNOWN data",
+      "description": "A student asks about LIN232H1's breadth, which is UNKNOWN. The agent should surface uncertainty rather than guessing.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Winter"
+      },
+      "completed_courses": ["COG100H1", "CSC108H1", "CSC148H1"],
+      "user_query": "I'm thinking about taking LIN232H1 next term. What breadth requirement does it fulfill? Also, is it in the Computational Cognition Stream pool?",
+      "expected_tools": ["get_course_details"],
+      "expected_behaviors": [
+        "Calls get_course_details for LIN232H1.",
+        "Reports the course title, department, and other details.",
+        "Explicitly states that the breadth is UNKNOWN / not listed on the Academic Calendar page.",
+        "Does not guess or invent a breadth category.",
+        "Checks whether LIN232H1 is in the Computational Cognition Stream pool."
+      ],
+      "failure_conditions": [
+        "Invents a breadth category when the data says UNKNOWN.",
+        "Fails to mention the UNKNOWN status.",
+        "Presents UNKNOWN breadth as if it were confirmed data."
+      ]
+    },
+    {
+      "case_id": "breadth_cog498_independent_study",
+      "category": "breadth_requirement",
+      "title": "Independent study course with UNKNOWN breadth",
+      "description": "A student asks about COG498H1 (Independent Study), which has UNKNOWN breadth because the Academic Calendar does not list BR for independent study courses. The agent should explain this context.",
+      "student_profile": {
+        "year": 4,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["COG100H1", "COG200H1", "CSC108H1", "CSC148H1", "PSY270H1", "STA237H1"],
+      "user_query": "I want to do COG498H1 next year. Does it count for any breadth requirement?",
+      "expected_tools": ["get_course_details"],
+      "expected_behaviors": [
+        "Calls get_course_details for COG498H1.",
+        "Reports that breadth is UNKNOWN for independent study courses.",
+        "Explains that independent study courses typically do not list BR in the Academic Calendar.",
+        "Notes prerequisite: 15.0 credits completed and minimum cGPA of 3.0."
+      ],
+      "failure_conditions": [
+        "Assigns a breadth category that is not in the data.",
+        "Fails to mention the GPA and credit prerequisites.",
+        "Treats the UNKNOWN breadth as a confirmed value."
+      ]
+    },
+    {
+      "case_id": "breadth_multiple_courses",
+      "category": "breadth_requirement",
+      "title": "Checking breadth coverage across multiple courses",
+      "description": "A student asks what breadth categories are covered by specific pool courses they're considering.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall and Winter"
+      },
+      "completed_courses": ["COG100H1", "CSC108H1", "CSC148H1"],
+      "user_query": "What breadth requirements would CSC165H1, COG260H1, and PHL342H1 cover? I'm trying to plan my BR distribution.",
+      "expected_tools": ["get_course_details"],
+      "expected_behaviors": [
+        "Looks up each course (at minimum one of them).",
+        "Reports the breadth category for each course from the data.",
+        "Flags any UNKNOWN breadth values.",
+        "Reminds the student that BR completion should be verified with the official calendar."
+      ],
+      "failure_conditions": [
+        "Guesses breadth for courses with UNKNOWN breadth.",
+        "Claims the student has officially completed their BR requirements.",
+        "Fails to look up course details for the specified courses."
+      ]
+    },
+
+    {
+      "case_id": "verify_mat137_unverified",
+      "category": "verification_uncertainty",
+      "title": "Unverified data — MAT137Y1 in math pathway",
+      "description": "A student asks about MAT137Y1 as a math pathway option. The course has verification_status 'needs_official_verification' and may have been retired.",
+      "student_profile": {
+        "year": 1,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": [],
+      "user_query": "Should I take MAT137Y1 for the math requirement in the Cognitive Science Computational Cognition stream?",
+      "expected_tools": ["get_course_metadata_status", "recommend_courses_for_requirement"],
+      "expected_tool_sequence": ["get_course_metadata_status", "recommend_courses_for_requirement"],
+      "expected_behaviors": [
+        "Calls get_course_metadata_status for MAT137Y1 to check verification status.",
+        "Surfaces needs_official_verification status for MAT137Y1.",
+        "Calls recommend_courses_for_requirement with requirement_tag first_year_math_pathway.",
+        "Reports alternatives from the retrieved math pathway observation.",
+        "Does not claim MAT137Y1 is absent based on preview absence from another pool.",
+        "Does not make definitive claims about MAT137Y1 availability or recommendation.",
+        "Advises verifying with official sources before enrolling."
+      ],
+      "failure_conditions": [
+        "Presents MAT137Y1 as confirmed and available without any uncertainty.",
+        "Fails to mention needs_official_verification status.",
+        "Queries computational_cognition_stream_pool instead of first_year_math_pathway.",
+        "Claims MAT137Y1 is unavailable based only on preview absence.",
+        "Does not retrieve math pathway alternatives.",
+        "Makes a definitive enrollment recommendation without verification caveats."
+      ]
+    },
+    {
+      "case_id": "verify_mat157_unverified",
+      "category": "verification_uncertainty",
+      "title": "Unverified data — MAT157Y1",
+      "description": "A student asks about MAT157Y1, another course with needs_official_verification status. Like MAT137Y1, it may have been retired.",
+      "student_profile": {
+        "year": 1,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["MAT158H1"],
+      "user_query": "I'm in the Cognitive Science program. I took MAT158H1. Should I continue with MAT157Y1 or switch to MAT159H1 + something else?",
+      "expected_tools": ["get_course_details"],
+      "expected_behaviors": [
+        "Calls get_course_details for MAT157Y1 and/or MAT159H1.",
+        "Reports that MAT157Y1 has needs_official_verification status.",
+        "Notes that MAT159H1 excludes MAT157Y1.",
+        "Advises verifying MAT157Y1's current status before committing.",
+        "Presents MAT159H1 as a verified alternative if applicable."
+      ],
+      "failure_conditions": [
+        "Recommends MAT157Y1 without mentioning the verification uncertainty.",
+        "Ignores the exclusion between MAT159H1 and MAT157Y1.",
+        "Presents both courses as equally verified."
+      ]
+    },
+    {
+      "case_id": "verify_calendar_verified",
+      "category": "verification_uncertainty",
+      "title": "Calendar-verified course — present as reliable",
+      "description": "A student asks about a course with calendar_verified status. The agent should present this as reliable information since 93 of 95 courses have this status.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["COG100H1", "CSC108H1"],
+      "user_query": "Is the information about PSY270H1 reliable? I want to make sure before I enroll.",
+      "expected_tools": ["get_course_details"],
+      "expected_behaviors": [
+        "Calls get_course_details for PSY270H1.",
+        "Confirms the course has calendar_verified status.",
+        "Presents the prerequisite (PSY100H1 or equivalent) as confirmed.",
+        "Notes any exclusions (PSY270H5, PSYB57H3).",
+        "Still includes a general verification reminder."
+      ],
+      "failure_conditions": [
+        "Expresses unnecessary doubt about calendar_verified data.",
+        "Fails to mention exclusions.",
+        "Does not include the standard verification reminder."
+      ]
+    },
+    {
+      "case_id": "verify_csc_program_restriction",
+      "category": "verification_uncertainty",
+      "title": "CSC program restriction in verification_note",
+      "description": "A student asks about CSC303H1, which has a verification_note about the 1.5-credit cap for non-CS majors. The agent should surface this program restriction.",
+      "student_profile": {
+        "year": 3,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["CSC108H1", "CSC148H1", "CSC165H1", "CSC207H1", "CSC236H1", "STA237H1", "MAT135H1", "MAT136H1", "MAT223H1"],
+      "user_query": "Tell me about CSC303H1. It looks interesting and is in the pool. Can I take it?",
+      "expected_tools": ["get_course_details"],
+      "expected_behaviors": [
+        "Calls get_course_details for CSC303H1.",
+        "Reports the course details including the complex prerequisites (three components).",
+        "Surfaces the verification note about the 1.5-credit cap for non-CS majors.",
+        "Notes prerequisite_status — likely manual_review_needed due to complexity.",
+        "Mentions the exclusion with CSCC46H3."
+      ],
+      "failure_conditions": [
+        "Presents CSC303H1 as a simple course without discussing prerequisites.",
+        "Omits the CSC program restriction note.",
+        "Does not mention that prerequisites are multi-component and complex."
+      ]
+    },
+
+    {
+      "case_id": "program_required_courses",
+      "category": "program_requirements",
+      "title": "What are the required courses for my program?",
+      "description": "A first-year student wants to know which courses are required for the Cognitive Science Computational Cognition Stream. The agent should list core requirements from the program data.",
+      "student_profile": {
+        "year": 1,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": [],
+      "user_query": "What courses do I have to take for the Cognitive Science Computational Cognition Stream? What are the required courses?",
+      "expected_tools": [],
+      "expected_behaviors": [
+        "Lists required courses: COG100H1, COG200H1, PSY270H1, PSY290H1, PHL342H1.",
+        "Explains choice groups (intro CS pathway, math pathway, statistics choice, capstone).",
+        "Mentions the Computational Cognition Stream pool requirement (2.5 credits).",
+        "Explains the 300+ level and CSC credit rules.",
+        "Includes a verification reminder."
+      ],
+      "failure_conditions": [
+        "Invents required courses not in the program data.",
+        "Forgets to mention the Computational Cognition Stream pool requirement.",
+        "Omits the CSC credit cap or 300+ level requirements."
+      ]
+    },
+    {
+      "case_id": "program_math_pathway",
+      "category": "program_requirements",
+      "title": "Choosing a math pathway",
+      "description": "A student asks about math pathway options. The program offers multiple pathways (standard calculus, proofs-based, etc.). Some options involve needs_official_verification courses.",
+      "student_profile": {
+        "year": 1,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": [],
+      "user_query": "What math courses should I take for the Cognitive Science program? I'm okay at math but not a genius.",
+      "expected_tools": [],
+      "expected_behaviors": [
+        "Lists the math pathway options from the program data.",
+        "Mentions MAT135H1+MAT136H1 as the standard pathway.",
+        "Mentions MAT137Y1 and MAT157Y1 as proofs-based alternatives.",
+        "Warns that MAT137Y1 and MAT157Y1 have needs_official_verification status.",
+        "Recommends the standard pathway for most students unless pursuing graduate work."
+      ],
+      "failure_conditions": [
+        "Only mentions one math option when multiple exist.",
+        "Presents MAT137Y1 as equally verified as MAT135H1/MAT136H1.",
+        "Does not mention the verification concerns with MAT137Y1 and MAT157Y1."
+      ]
+    },
+    {
+      "case_id": "program_statistics_choice",
+      "category": "program_requirements",
+      "title": "Statistics choice group planning",
+      "description": "A student has completed first-year courses and needs to choose a statistics course. They need help deciding which option in the statistics choice group is best.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["COG100H1", "CSC108H1", "CSC148H1", "MAT135H1", "MAT136H1"],
+      "user_query": "I need to pick a statistics course for my program. The options are STA237H1, STA238H1, STA247H1, STA248H1, STA220H1, PSY201H1. Which one should I take?",
+      "expected_tools": [],
+      "expected_behaviors": [
+        "Lists the statistics choice options from the program data.",
+        "Mentions prerequisites for each option.",
+        "Notes that PSY201H1 requires PSY100H1 or equivalent.",
+        "Discusses exclusions between statistics courses (e.g., STA237H1 excludes STA247H1).",
+        "Recommends based on the student's math background (MAT135H1+MAT136H1 completed)."
+      ],
+      "failure_conditions": [
+        "Recommends a course without checking prerequisites.",
+        "Ignores mutual exclusions between statistics courses.",
+        "Fails to mention that some options require stronger math backgrounds."
+      ]
+    },
+    {
+      "case_id": "program_pool_rules",
+      "category": "program_requirements",
+      "title": "Understanding Computational Cognition Stream pool rules",
+      "description": "A student is confused about the pool rules (2.5 credits, 300+ level minimum, CSC credit cap, designator limit). The agent should explain all constraints clearly.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall and Winter"
+      },
+      "completed_courses": ["COG100H1", "CSC108H1", "CSC148H1"],
+      "user_query": "Can you explain the rules for the Computational Cognition Stream pool? I don't understand the credit rules and restrictions.",
+      "expected_tools": [],
+      "expected_behaviors": [
+        "Explains the 2.5 credit requirement from the pool.",
+        "Explains at least 1.0 credit at 300+ level.",
+        "Explains no more than 1.5 credits from any single designator (except CSC).",
+        "Explains CSC: minimum 1.0 credit, up to 2.0 credits.",
+        "Mentions the CSC 1.5-credit cap for 300-/400-level courses.",
+        "Includes a verification reminder."
+      ],
+      "failure_conditions": [
+        "Misstates the credit requirements (e.g., wrong amounts).",
+        "Forgets the CSC-specific rules.",
+        "Fails to mention the designator limit."
+      ]
+    },
+
+    {
+      "case_id": "insufficient_no_info",
+      "category": "insufficient_information",
+      "title": "General interest — should ask clarifying questions",
+      "description": "A student gives a vague query without specifying completed courses or what they need. The agent should ask for missing information rather than guessing.",
+      "student_profile": {
+        "year": 1,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": null
+      },
+      "completed_courses": [],
+      "user_query": "What courses should I take?",
+      "expected_tools": [],
+      "expected_behaviors": [
+        "Asks the student to clarify what they need (completed courses, interests, target term).",
+        "Does not recommend specific courses without context.",
+        "Mentions that it can help with program requirements, prerequisites, pool selection, or breadth.",
+        "Does not fabricate completed courses."
+      ],
+      "failure_conditions": [
+        "Recommends specific courses without knowing the student's background.",
+        "Assumes completed courses that the student has not stated.",
+        "Calls a tool with fabricated arguments."
+      ]
+    },
+    {
+      "case_id": "insufficient_no_completed",
+      "category": "insufficient_information",
+      "title": "Asking about eligibility without stating completed courses",
+      "description": "A student asks about course eligibility but doesn't say what they've completed. The agent should ask for completed courses before checking prerequisites.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Winter"
+      },
+      "completed_courses": [],
+      "user_query": "Am I eligible to take CSC311H1?",
+      "expected_tools": [],
+      "expected_behaviors": [
+        "Uses action='clarify' to ask the student for missing information.",
+        "Asks specifically about completed courses, which are needed for eligibility.",
+        "Does not call any tool or make an eligibility determination.",
+        "Makes the clarification question specific and actionable.",
+        "Does not provide course advice before receiving the missing information."
+      ],
+      "failure_conditions": [
+        "Makes an eligibility determination without knowing completed courses.",
+        "Calls check_prerequisites with an empty or fabricated completed_courses list.",
+        "Claims the student is eligible or ineligible without data.",
+        "Gives course advice before asking for missing information."
+      ]
+    },
+    {
+      "case_id": "insufficient_no_term",
+      "category": "insufficient_information",
+      "title": "Course recommendation without specifying target term",
+      "description": "A student asks for course recommendations but doesn't specify whether they're planning for Fall or Winter. Term availability matters for planning.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": null
+      },
+      "completed_courses": ["COG100H1", "CSC108H1", "CSC148H1"],
+      "user_query": "What courses in the pool should I take next?",
+      "expected_tools": [],
+      "expected_behaviors": [
+        "Asks the student which term they are planning for (Fall, Winter, or both).",
+        "Explains why term matters (some courses are term-specific, many have UNKNOWN availability).",
+        "Does not make assumptions about the target term."
+      ],
+      "failure_conditions": [
+        "Recommends courses without asking about the target term.",
+        "Assumes the student means Fall without confirming.",
+        "Ignores that term availability affects course planning."
+      ]
+    },
+
+    {
+      "case_id": "multistep_csc384h1_winter",
+      "category": "prerequisite_reasoning",
+      "title": "Multi-step: eligibility AND Winter availability for CSC384H1",
+      "description": "A student asks whether they can take CSC384H1 in Winter with CSC148H1 and STA237H1 completed. This requires two tools: check_prerequisites to determine eligibility, then check_term_availability to confirm Winter offering. The final answer must distinguish course availability from student eligibility.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Winter"
+      },
+      "completed_courses": ["CSC148H1", "STA237H1"],
+      "user_query": "Can I take CSC384H1 in Winter if I have completed CSC148H1 and STA237H1?",
+      "expected_tools": ["check_prerequisites", "check_term_availability"],
+      "expected_tool_sequence": ["check_prerequisites", "check_term_availability"],
+      "expected_behaviors": [
+        "Calls check_prerequisites for CSC384H1 with the completed courses.",
+        "Calls check_term_availability for CSC384H1 with target_term Winter.",
+        "Reports that prerequisite eligibility is not_eligible or manual_review_needed.",
+        "Reports that CSC384H1 is available in Winter.",
+        "Distinguishes course availability (the course exists in Winter) from student eligibility (the student cannot enroll).",
+        "Does not claim that Winter availability means the student can enroll."
+      ],
+      "failure_conditions": [
+        "Skips prerequisite checking and only checks term availability.",
+        "Skips term availability and only checks prerequisites.",
+        "Says the student is eligible when prerequisites are not satisfied.",
+        "Claims the course is unavailable in Winter.",
+        "Invented prerequisite details not supported by tool observations.",
+        "Conflates course availability with student eligibility."
+      ]
+    }
+  ]
+}

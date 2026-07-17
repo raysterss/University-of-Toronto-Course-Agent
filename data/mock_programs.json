@@ -1,0 +1,343 @@
+{
+  "programs": [
+    {
+      "program_id": "cog_sci_major_computational_cognition",
+      "program_code": "ASMAJ1446A",
+      "program_name": "Cognitive Science Major - Science (Computational Cognition Stream)",
+      "faculty": "Faculty of Arts & Science",
+      "program_type": "Major",
+      "total_credits": 8.0,
+
+      "enrolment_requirements": [
+        "Limited enrolment program. Completion of 4.0 credits required.",
+        "COG100H1 must be completed.",
+        "0.5 credit in CSC (recommended: CSC108H1 or CSC110Y1).",
+        "0.5 credit in LIN, PHL, or PSY.",
+        "Variable minimum grade average applies. Minimum 70% in required courses, but 70% does not guarantee admission.",
+        "Admission grade requirements are simplified in this mock data."
+      ],
+
+      "completion_requirements": {
+        "total_credits_needed": 8.0,
+
+        "first_year": {
+          "description": "First Year requirements",
+          "required_courses": [
+            { "course_code": "COG100H1", "credits": 0.5, "category": "Core Cognitive Science" }
+          ],
+          "choice_groups": [
+            {
+              "group_id": "first_year_intro_cs_pathway",
+              "description": "Choose one introductory Computer Science pathway",
+              "official_expression": "(CSC110Y1, CSC111H1) / (CSC108H1, CSC148H1)",
+              "credits_needed": 1.0,
+              "completion_logic": "complete_one_option",
+              "category": "CS Foundation",
+              "options": [
+                {
+                  "option_id": "cs_accelerated",
+                  "description": "CSC110Y1 + CSC111H1 (accelerated pathway)",
+                  "required_courses": ["CSC110Y1", "CSC111H1"],
+                  "credits_required": 1.5
+                },
+                {
+                  "option_id": "cs_standard",
+                  "description": "CSC108H1 + CSC148H1 (standard pathway)",
+                  "required_courses": ["CSC108H1", "CSC148H1"],
+                  "credits_required": 1.0
+                }
+              ]
+            },
+            {
+              "group_id": "first_year_math_pathway",
+              "description": "Choose one math pathway",
+              "official_expression": "(MAT130H1 / MAT135H1, MAT136H1) / (MAT148H1, MAT149H1) / MAT137Y1 / (MAT158H1, MAT159H1) / MAT157Y1",
+              "credits_needed": 1.0,
+              "completion_logic": "complete_one_option",
+              "category": "Math Foundation",
+              "note": "The official expression '(MAT130H1 / MAT135H1, MAT136H1)' uses '/' between MAT130H1 and MAT135H1, and ',' before MAT136H1. The most natural reading in UofT calendar notation is: choose either MAT130H1 or MAT135H1, then take MAT136H1. This interpretation is presented as two separate sub-options below and requires official verification.",
+              "verification_status": "needs_official_verification",
+              "options": [
+                {
+                  "option_id": "math_mat130_mat136",
+                  "description": "MAT130H1 + MAT136H1",
+                  "required_courses": ["MAT130H1", "MAT136H1"],
+                  "credits_required": 1.0
+                },
+                {
+                  "option_id": "math_mat135_mat136",
+                  "description": "MAT135H1 + MAT136H1",
+                  "required_courses": ["MAT135H1", "MAT136H1"],
+                  "credits_required": 1.0
+                },
+                {
+                  "option_id": "math_mat148_mat149",
+                  "description": "MAT148H1 + MAT149H1",
+                  "required_courses": ["MAT148H1", "MAT149H1"],
+                  "credits_required": 1.0
+                },
+                {
+                  "option_id": "math_mat137",
+                  "description": "MAT137Y1 (full-year calculus with proofs)",
+                  "required_courses": ["MAT137Y1"],
+                  "credits_required": 1.0
+                },
+                {
+                  "option_id": "math_mat158_mat159",
+                  "description": "MAT158H1 + MAT159H1",
+                  "required_courses": ["MAT158H1", "MAT159H1"],
+                  "credits_required": 1.0
+                },
+                {
+                  "option_id": "math_mat157",
+                  "description": "MAT157Y1 (full-year analysis I)",
+                  "required_courses": ["MAT157Y1"],
+                  "credits_required": 1.0
+                }
+              ]
+            }
+          ],
+          "recommended": [
+            {
+              "course_code": "CSC165H1",
+              "note": "Recommended if planning to take CSC384H1."
+            }
+          ]
+        },
+
+        "second_year": {
+          "description": "Second Year requirements",
+          "required_courses": [
+            { "course_code": "COG200H1", "credits": 0.5, "category": "Core Cognitive Science" },
+            { "course_code": "PSY270H1", "credits": 0.5, "category": "Psychology Requirement" }
+          ],
+          "choice_groups": [
+            {
+              "group_id": "second_year_statistics_choice",
+              "description": "Choose one statistics course",
+              "official_expression": "STA220H1 / STA237H1 / STA238H1 / STA247H1 / STA248H1 / STA255H1 / STA257H1 / PSY201H1",
+              "credits_needed": 0.5,
+              "completion_logic": "complete_one_option",
+              "category": "Statistics Requirement",
+              "options": [
+                {
+                  "option_id": "stat_sta220",
+                  "description": "STA220H1",
+                  "required_courses": ["STA220H1"],
+                  "credits_required": 0.5
+                },
+                {
+                  "option_id": "stat_sta237",
+                  "description": "STA237H1",
+                  "required_courses": ["STA237H1"],
+                  "credits_required": 0.5
+                },
+                {
+                  "option_id": "stat_sta238",
+                  "description": "STA238H1",
+                  "required_courses": ["STA238H1"],
+                  "credits_required": 0.5
+                },
+                {
+                  "option_id": "stat_sta247",
+                  "description": "STA247H1",
+                  "required_courses": ["STA247H1"],
+                  "credits_required": 0.5
+                },
+                {
+                  "option_id": "stat_sta248",
+                  "description": "STA248H1",
+                  "required_courses": ["STA248H1"],
+                  "credits_required": 0.5
+                },
+                {
+                  "option_id": "stat_sta255",
+                  "description": "STA255H1",
+                  "required_courses": ["STA255H1"],
+                  "credits_required": 0.5
+                },
+                {
+                  "option_id": "stat_sta257",
+                  "description": "STA257H1",
+                  "required_courses": ["STA257H1"],
+                  "credits_required": 0.5
+                },
+                {
+                  "option_id": "stat_psy201",
+                  "description": "PSY201H1",
+                  "required_courses": ["PSY201H1"],
+                  "credits_required": 0.5
+                }
+              ]
+            }
+          ]
+        },
+
+        "second_year_and_higher": {
+          "description": "Second Year and Higher requirements",
+          "required_courses": [
+            { "course_code": "PSY290H1", "credits": 0.5, "category": "Psychology / Neuroscience" },
+            { "course_code": "PHL342H1", "credits": 0.5, "category": "Philosophy Requirement" }
+          ]
+        },
+
+        "approved_pools": [
+          {
+            "pool_id": "computational_cognition_stream_pool",
+            "pool_name": "Computational Cognition Stream Pool",
+            "official_expression": "COG260H1 / COG341H1 / COG342H1 / COG344H1 / COG345H1 / COG415H1 / COG498H1 / COG499H1 / CSB334H1 / CSC165H1 / CSC207H1 / CSC271H1 / CSC303H1 / CSC304H1 / CSC311H1 / CSC320H1 / CSC324H1 / CSC384H1 / CSC401H1 / CSC412H1 / CSC413H1 / CSC420H1 / CSC485H1 / CSC486H1 / JLP315H1 / JLP374H1 / JLP471H1 / LIN102H1 / LIN228H1 / LIN232H1 / LIN241H1 / LIN323H1 / LIN331H1 / LIN341H1 / BPM333H1 / BPM438H1 / PHL240H1 / PHL245H1 / PHL246H1 / PHL345H1 / PHL347H1 / PHL348H1 / PHL349H1 / PHL355H1 / PHY359H1 / PSY210H1 / PSY220H1 / PSY230H1 / PSY260H1 / PSY280H1 / PSY312H1 / PSY305H1 / PSY316H1 / PSY330H1 / PSY331H1 / PSY362H1 / PSY370H1 / PSY371H1 / PSY372H1 / PSY378H1 / PSY379H1 / PSY380H1 / PSY414H1 / PSY475H1 / PSY493H1",
+            "credits_needed": 2.5,
+            "completion_logic": "choose_credits_from_pool",
+            "description": "2.5 credits must be chosen from the Computational Cognition Stream approved pool. Courses are listed in the same order as the official Academic Calendar.",
+            "courses": [
+              "COG260H1",
+              "COG341H1",
+              "COG342H1",
+              "COG344H1",
+              "COG345H1",
+              "COG415H1",
+              "COG498H1",
+              "COG499H1",
+              "CSB334H1",
+              "CSC165H1",
+              "CSC207H1",
+              "CSC271H1",
+              "CSC303H1",
+              "CSC304H1",
+              "CSC311H1",
+              "CSC320H1",
+              "CSC324H1",
+              "CSC384H1",
+              "CSC401H1",
+              "CSC412H1",
+              "CSC413H1",
+              "CSC420H1",
+              "CSC485H1",
+              "CSC486H1",
+              "JLP315H1",
+              "JLP374H1",
+              "JLP471H1",
+              "LIN102H1",
+              "LIN228H1",
+              "LIN232H1",
+              "LIN241H1",
+              "LIN323H1",
+              "LIN331H1",
+              "LIN341H1",
+              "BPM333H1",
+              "BPM438H1",
+              "PHL240H1",
+              "PHL245H1",
+              "PHL246H1",
+              "PHL345H1",
+              "PHL347H1",
+              "PHL348H1",
+              "PHL349H1",
+              "PHL355H1",
+              "PHY359H1",
+              "PSY210H1",
+              "PSY220H1",
+              "PSY230H1",
+              "PSY260H1",
+              "PSY280H1",
+              "PSY312H1",
+              "PSY305H1",
+              "PSY316H1",
+              "PSY330H1",
+              "PSY331H1",
+              "PSY362H1",
+              "PSY370H1",
+              "PSY371H1",
+              "PSY372H1",
+              "PSY378H1",
+              "PSY379H1",
+              "PSY380H1",
+              "PSY414H1",
+              "PSY475H1",
+              "PSY493H1"
+            ]
+          }
+        ],
+
+        "fourth_year": {
+          "description": "Fourth Year capstone requirement",
+          "choice_groups": [
+            {
+              "group_id": "fourth_year_capstone_choice",
+              "description": "Choose one fourth-year capstone course",
+              "official_expression": "COG402H1 / COG403H1 / COG404H1 / COG497Y1 / COG498H1 / COG499H1",
+              "credits_needed": 0.5,
+              "completion_logic": "complete_one_option",
+              "category": "Capstone Requirement",
+              "note": "COG497Y1 is a 1.0 credit full-year course. All other capstone options are 0.5 credit half-courses.",
+              "options": [
+                {
+                  "option_id": "capstone_cog402",
+                  "description": "COG402H1",
+                  "required_courses": ["COG402H1"],
+                  "credits_required": 0.5
+                },
+                {
+                  "option_id": "capstone_cog403",
+                  "description": "COG403H1",
+                  "required_courses": ["COG403H1"],
+                  "credits_required": 0.5
+                },
+                {
+                  "option_id": "capstone_cog404",
+                  "description": "COG404H1",
+                  "required_courses": ["COG404H1"],
+                  "credits_required": 0.5
+                },
+                {
+                  "option_id": "capstone_cog497",
+                  "description": "COG497Y1",
+                  "required_courses": ["COG497Y1"],
+                  "credits_required": 1.0
+                },
+                {
+                  "option_id": "capstone_cog498",
+                  "description": "COG498H1",
+                  "required_courses": ["COG498H1"],
+                  "credits_required": 0.5
+                },
+                {
+                  "option_id": "capstone_cog499",
+                  "description": "COG499H1",
+                  "required_courses": ["COG499H1"],
+                  "credits_required": 0.5
+                }
+              ]
+            }
+          ]
+        },
+
+        "structured_special_rules": {
+          "minimum_300_level_credits": 1.0,
+          "csc_credit_minimum": 1.0,
+          "csc_credit_maximum": 2.0,
+          "designator_credit_maximum": 1.5,
+          "designator_exceptions": ["CSC"]
+        },
+
+        "special_rules": [
+          "At least 2.5 credits must be from the Computational Cognition Stream Pool.",
+          "At least 1.0 credit of the 2.5 pool credits must be at the 300-level or higher.",
+          "No more than 1.5 credits from any single 3-letter course designator, except CSC courses.",
+          "For CSC courses: minimum 1.0 credit and up to 2.0 credits must be chosen from the pool.",
+          "CSC165H1 is recommended if planning to take CSC384H1."
+        ]
+      },
+
+      "notes": [
+        "This is a mock version based on the UofT Academic Calendar. It is not a replacement for official academic advising.",
+        "All final decisions must be verified with the official UofT Arts & Science Calendar or an academic advisor.",
+        "Not all courses are offered every year. Check the official timetable for current offerings.",
+        "Some CSC courses have unlisted co- or prerequisites. Consult the Faculty of Arts and Science Course Calendar.",
+        "Students interested in this stream are advised to consider a Computer Science Specialist, Major, or Minor.",
+        "The official Computational Cognition Stream pool contains 60+ approved courses. This file lists the full set from the calendar.",
+        "Mock data is not a substitute for academic advising."
+      ]
+    }
+  ]
+}
