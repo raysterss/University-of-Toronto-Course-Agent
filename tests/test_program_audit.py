@@ -1090,7 +1090,7 @@ def test_csc_excluded_from_designator_limit():
 
 def test_audit_phase2a_includes_both_phases():
     result = audit_program_progress(["CSC165H1", "CSC311H1", "CSC384H1"])
-    assert result["audit_version"] == "1.0-phase2b1"
+    assert result["audit_version"] == "1.0-phase2b2"
     assert "requirement_results" in result
     assert "pool_results" in result
     assert "special_rule_results" in result
@@ -1504,5 +1504,164 @@ def test_allocation_summary_counts():
     assert s["unique_catalog_credits_completed"] == 1.5
 
 
-def test_audit_version_phase2b1():
-    assert audit_program_progress([])["audit_version"] == "1.0-phase2b1"
+def test_audit_version_phase2b2():
+    assert audit_program_progress([])["audit_version"] == "1.0-phase2b2"
+
+
+# =========================================================================
+# Phase 2B2 — Priority items
+# =========================================================================
+
+from src.program_audit import build_priority_items  # noqa: E402
+
+
+def _make_req(progress="not_started", review="clear", rtype="required_course_group",
+              credits_completed=0.0, credits_required=0.5, missing=None,
+              completed_opts=None, best_partial=None):
+    result = {
+        "type": rtype,
+        "progress_status": progress,
+        "review_status": review,
+        "credits_completed": credits_completed,
+        "credits_required": credits_required,
+    }
+    if rtype == "required_course_group":
+        result["missing_courses"] = missing or []
+    elif rtype == "choice_group":
+        result["completed_options"] = completed_opts or []
+        result["best_partial_option"] = best_partial
+    return result
+
+
+def test_priority_empty_produces_items():
+    """No completed courses → gap items for every incomplete requirement."""
+    result = audit_program_progress([])
+    items = result["priority_items"]
+    assert len(items) > 0
+    assert items[0]["rank"] == 1
+
+
+def test_priority_completed_requirement_omitted():
+    result = audit_program_progress(["COG100H1"])
+    items = result["priority_items"]
+    # first_year_required is completed — should NOT appear.
+    categories = [i["category"] for i in items]
+    assert "first_year_required" not in categories
+
+
+def test_priority_partial_fixed_group_creates_item():
+    result = audit_program_progress(["COG200H1"])
+    items = result["priority_items"]
+    second = [i for i in items if i["category"] == "second_year_required"]
+    assert len(second) == 1
+    assert second[0]["priority_type"] == "required_course_gap"
+    assert second[0]["progress_status"] == "partially_completed"
+
+
+def test_priority_incomplete_choice_creates_item():
+    result = audit_program_progress(["COG100H1"])
+    items = result["priority_items"]
+    stats = [i for i in items if i["category"] == "second_year_statistics_choice"]
+    assert len(stats) == 1
+    assert stats[0]["priority_type"] == "choice_group_gap"
+    assert stats[0]["progress_status"] == "not_started"
+
+
+def test_priority_completed_choice_omitted():
+    result = audit_program_progress(["STA237H1"])
+    items = result["priority_items"]
+    categories = [i["category"] for i in items]
+    assert "second_year_statistics_choice" not in categories
+
+
+def test_priority_pool_partial_creates_item():
+    result = audit_program_progress(["CSC311H1"])
+    items = result["priority_items"]
+    pool = [i for i in items if i["category"] == "computational_cognition_stream_pool"]
+    assert len(pool) == 1
+    assert pool[0]["priority_type"] == "pool_credit_gap"
+
+
+def test_priority_300_unmet_creates_item():
+    result = audit_program_progress(["CSC165H1"])
+    items = result["priority_items"]
+    r300 = [i for i in items if i["category"] == "rule_300_level_minimum"]
+    assert len(r300) == 1
+    assert r300[0]["rule_status"] == "not_met"
+
+
+def test_priority_300_met_omitted():
+    result = audit_program_progress(["CSC311H1", "CSC384H1"])
+    items = result["priority_items"]
+    r300 = [i for i in items if i["category"] == "rule_300_level_minimum"]
+    assert r300 == []
+
+
+def test_priority_csc_min_unmet_creates_item():
+    result = audit_program_progress(["COG260H1"])
+    items = result["priority_items"]
+    csc_min = [i for i in items if i["category"] == "rule_csc_minimum"]
+    assert len(csc_min) == 1
+
+
+def test_priority_csc_min_met_omitted():
+    result = audit_program_progress(["CSC311H1", "CSC384H1"])
+    items = result["priority_items"]
+    csc_min = [i for i in items if i["category"] == "rule_csc_minimum"]
+    assert csc_min == []
+
+
+def test_priority_capstone_last():
+    result = audit_program_progress([])
+    items = result["priority_items"]
+    cap_items = [i for i in items if "capstone" in i["category"]]
+    if cap_items:
+        assert cap_items[0]["rank"] == items[-1]["rank"]
+
+
+def test_priority_ranks_consecutive():
+    result = audit_program_progress(["COG100H1"])
+    items = result["priority_items"]
+    ranks = [i["rank"] for i in items]
+    assert ranks == list(range(1, len(ranks) + 1))
+
+
+def test_priority_deterministic():
+    r1 = audit_program_progress(["COG100H1"])
+    r2 = audit_program_progress(["COG100H1"])
+    assert [i["category"] for i in r1["priority_items"]] == \
+           [i["category"] for i in r2["priority_items"]]
+
+
+def test_priority_no_duplicate_categories():
+    result = audit_program_progress(["COG100H1"])
+    items = result["priority_items"]
+    cats = [i["category"] for i in items]
+    assert len(cats) == len(set(cats))
+
+
+def test_priority_evidence_paths_present():
+    result = audit_program_progress(["COG100H1"])
+    for item in result["priority_items"]:
+        assert "evidence" in item
+        assert "source" in item["evidence"]
+
+
+def test_priority_existing_fields_preserved():
+    result = audit_program_progress(["COG100H1"])
+    for key in ["requirement_results", "pool_results", "special_rule_results",
+                "overall_status", "overall_review_status"]:
+        assert key in result, f"Missing key: {key}"
+
+
+def test_priority_input_not_mutated():
+    original = ["COG100H1"]
+    audit_program_progress(original)
+    assert original == ["COG100H1"]
+
+
+def test_priority_credits_remaining_non_negative():
+    result = audit_program_progress(["COG100H1"])
+    for item in result["priority_items"]:
+        if "credits_remaining" in item:
+            assert item["credits_remaining"] >= 0

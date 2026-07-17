@@ -1076,6 +1076,12 @@ def audit_program_progress(
         allocations, classification["unverified_courses"],
     )
 
+    # Phase 2B2: priority items.
+    priority_items = build_priority_items(
+        phase1["requirement_results"], pool_results,
+        special_rule_results, overall_review,
+    )
+
     # Deduplicate warnings (exact matches only).
     unique_warnings: list[str] = []
     seen_w = set()
@@ -1085,7 +1091,7 @@ def audit_program_progress(
             unique_warnings.append(w)
 
     return {
-        "audit_version": "1.0-phase2b1",
+        "audit_version": "1.0-phase2b2",
         "program_code": program_code,
         "program_name": program.get("program_name", ""),
         "normalized_input": norm,
@@ -1099,13 +1105,13 @@ def audit_program_progress(
         "exclusion_conflicts": exclusion_conflicts,
         "overlap_cases": overlap_cases,
         "course_allocations": allocations,
+        "priority_items": priority_items,
         "warnings": unique_warnings,
         "assumptions": list(phase1["assumptions"]),
         "limitations": [
             "Official exclusion-credit decisions are not made.",
             "Official double-count allocation is not implemented.",
             "Program-counted total credits are not calculated.",
-            "Priority items are not implemented.",
             "Enrollment restrictions are not evaluated.",
             "This is not an official Degree Explorer audit.",
         ],
@@ -1113,8 +1119,280 @@ def audit_program_progress(
 
 
 # =========================================================================
-# Phase 2B1 — Exclusion conflicts, allocations, review status
+# Phase 2B2 — Priority items
 # =========================================================================
+
+
+def _section_order(section_key: str) -> int:
+    """Deterministic ordering for requirement sections."""
+    _ORDER = {
+        "first_year": 0, "second_year": 1,
+        "second_year_and_higher": 2, "fourth_year": 10,
+    }
+    return _ORDER.get(section_key, 5)
+
+
+def build_priority_items(
+    requirement_results: dict[str, Any],
+    pool_results: dict[str, Any],
+    special_rule_results: dict[str, Any],
+    overall_review_status: str,
+) -> list[dict[str, Any]]:
+    """Build a deterministic priority list from existing audit results.
+
+    Priority items describe unfinished requirements factually, not as
+    personalized recommendations.  Review-required items appear first,
+    followed by gap items in program structure order.
+
+    Args:
+        requirement_results: Phase 1 requirement evaluation results.
+        pool_results: Phase 2A pool credit counting results.
+        special_rule_results: Phase 2A special-rule evaluation results.
+        overall_review_status: Computed overall review status.
+
+    Returns:
+        A list of priority item dicts, sorted by rank.
+    """
+    items: list[dict[str, Any]] = []
+    rank = 1
+
+    # --- Collect review-required items first ---
+    for key, req in requirement_results.items():
+        ps = req.get("progress_status", "not_started")
+        rs = req.get("review_status", "clear")
+        if ps == "completed" and rs in ("manual_review_needed",
+                                         "needs_official_verification"):
+            items.append({
+                "rank": rank,
+                "priority_type": "review_required",
+                "category": key,
+                "title": "Verify this requirement before relying on the audit result",
+                "progress_status": ps,
+                "review_status": rs,
+                "evidence": {"source": f"requirement_results.{key}"},
+            })
+            rank += 1
+
+    # Pool review-required.
+    for key, pool in pool_results.items():
+        ps = pool.get("progress_status", "not_started")
+        rs = pool.get("review_status", "clear")
+        if ps == "completed" and rs in ("manual_review_needed",
+                                         "needs_official_verification"):
+            items.append({
+                "rank": rank,
+                "priority_type": "review_required",
+                "category": key,
+                "title": "Verify this pool result before relying on the audit",
+                "progress_status": ps,
+                "review_status": rs,
+                "evidence": {"source": f"pool_results.{key}"},
+            })
+            rank += 1
+
+    # Special-rule unknown → review required.
+    for key, sr in special_rule_results.items():
+        if not isinstance(sr, dict):
+            continue
+        if sr.get("rule_status") == "unknown":
+            items.append({
+                "rank": rank,
+                "priority_type": "review_required",
+                "category": key,
+                "title": "This rule could not be evaluated — verify manually",
+                "rule_status": "unknown",
+                "review_status": sr.get("review_status", "?"),
+                "evidence": {"source": f"special_rule_results.{key}"},
+            })
+            rank += 1
+
+    # --- Gap items: fixed required courses ---
+    # Collect all requirement entries sorted by section order.
+    req_entries: list[tuple[str, dict, int]] = []
+    for key, req in requirement_results.items():
+        if req.get("type") != "required_course_group":
+            continue
+        order = _section_order(key.split("_")[0])
+        req_entries.append((key, req, order))
+    req_entries.sort(key=lambda x: x[2])
+
+    for key, req, _order in req_entries:
+        ps = req.get("progress_status", "not_started")
+        if ps == "completed":
+            continue
+        credits = req.get("credits_remaining",
+                          req.get("credits_required", 0)
+                          - req.get("credits_completed", 0))
+        items.append({
+            "rank": rank,
+            "priority_type": "required_course_gap",
+            "category": key,
+            "title": f"Complete remaining courses for {key}",
+            "progress_status": ps,
+            "review_status": req.get("review_status", "clear"),
+            "credits_remaining": max(0.0, credits),
+            "missing_courses": req.get("missing_courses", []),
+            "evidence": {"source": f"requirement_results.{key}"},
+        })
+        rank += 1
+
+    # --- Gap items: choice groups (excluding capstone) ---
+    choice_entries: list[tuple[str, dict, int]] = []
+    for key, req in requirement_results.items():
+        if req.get("type") != "choice_group":
+            continue
+        if "capstone" in key.lower():
+            continue
+        order = _section_order(key.split("_")[0])
+        choice_entries.append((key, req, order))
+    choice_entries.sort(key=lambda x: x[2])
+
+    for key, req, _order in choice_entries:
+        ps = req.get("progress_status", "not_started")
+        if ps == "completed":
+            continue
+        items.append({
+            "rank": rank,
+            "priority_type": "choice_group_gap",
+            "category": key,
+            "title": "Complete one valid option",
+            "progress_status": ps,
+            "review_status": req.get("review_status", "clear"),
+            "completed_options": req.get("completed_options", []),
+            "best_partial_option": req.get("best_partial_option"),
+            "evidence": {"source": f"requirement_results.{key}"},
+        })
+        rank += 1
+
+    # --- Gap items: pool credits ---
+    for key, pool in pool_results.items():
+        ps = pool.get("progress_status", "not_started")
+        if ps == "completed":
+            continue
+        remaining = pool.get("credits_remaining",
+                             pool.get("credits_required", 0)
+                             - pool.get("credits_completed", 0))
+        if remaining <= 0:
+            continue
+        items.append({
+            "rank": rank,
+            "priority_type": "pool_credit_gap",
+            "category": key,
+            "title": f"Complete {remaining} remaining stream-pool credits",
+            "progress_status": ps,
+            "review_status": pool.get("review_status", "clear"),
+            "credits_remaining": max(0.0, remaining),
+            "evidence": {"source": f"pool_results.{key}"},
+        })
+        rank += 1
+
+    # --- Gap items: special rules ---
+    # 300-level minimum.
+    r300 = special_rule_results.get("rule_300_level_minimum", {})
+    if isinstance(r300, dict) and r300.get("rule_status") == "not_met":
+        items.append({
+            "rank": rank,
+            "priority_type": "special_rule_gap",
+            "category": "rule_300_level_minimum",
+            "title": "Meet the remaining 300-level credit minimum",
+            "rule_status": "not_met",
+            "review_status": r300.get("review_status", "clear"),
+            "credits_remaining": r300.get("remaining", 0),
+            "evidence": {"source": "special_rule_results.rule_300_level_minimum"},
+        })
+        rank += 1
+
+    # CSC minimum.
+    csc_min = special_rule_results.get("rule_csc_minimum", {})
+    if isinstance(csc_min, dict) and csc_min.get("rule_status") == "not_met":
+        items.append({
+            "rank": rank,
+            "priority_type": "special_rule_gap",
+            "category": "rule_csc_minimum",
+            "title": "Meet the CSC credit minimum",
+            "rule_status": "not_met",
+            "review_status": csc_min.get("review_status", "clear"),
+            "credits_remaining": csc_min.get("remaining", 0),
+            "evidence": {"source": "special_rule_results.rule_csc_minimum"},
+        })
+        rank += 1
+
+    # CSC maximum.
+    csc_max = special_rule_results.get("rule_csc_maximum", {})
+    if isinstance(csc_max, dict):
+        status = csc_max.get("rule_status", "?")
+        if status == "exceeded":
+            items.append({
+                "rank": rank,
+                "priority_type": "special_rule_gap",
+                "category": "rule_csc_maximum",
+                "title": "CSC credit maximum exceeded",
+                "rule_status": "exceeded",
+                "review_status": csc_max.get("review_status", "clear"),
+                "credits_remaining": 0.0,
+                "amount_over": csc_max.get("amount_over_limit", 0),
+                "evidence": {"source": "special_rule_results.rule_csc_maximum"},
+            })
+            rank += 1
+        elif status == "ok":
+            remaining = csc_max.get("remaining_before_limit", 0)
+            if 0 < remaining <= 0.5:
+                items.append({
+                    "rank": rank,
+                    "priority_type": "special_rule_info",
+                    "category": "rule_csc_maximum",
+                    "title": "CSC credit maximum is approaching",
+                    "rule_status": "ok",
+                    "review_status": csc_max.get("review_status", "clear"),
+                    "remaining_before_limit": remaining,
+                    "evidence": {"source": "special_rule_results.rule_csc_maximum"},
+                })
+                rank += 1
+
+    # Designator concentration.
+    dc = special_rule_results.get("rule_designator_concentration", {})
+    if isinstance(dc, dict) and dc.get("violations"):
+        items.append({
+            "rank": rank,
+            "priority_type": "special_rule_gap",
+            "category": "rule_designator_concentration",
+            "title": "Resolve designator concentration violations",
+            "rule_status": "exceeded",
+            "review_status": dc.get("review_status", "clear"),
+            "violations": dc.get("violations", []),
+            "evidence": {
+                "source": "special_rule_results.rule_designator_concentration",
+            },
+        })
+        rank += 1
+
+    # --- Gap items: capstone (last) ---
+    for key, req in requirement_results.items():
+        if req.get("type") != "choice_group":
+            continue
+        if "capstone" not in key.lower():
+            continue
+        ps = req.get("progress_status", "not_started")
+        if ps == "completed":
+            continue
+        items.append({
+            "rank": rank,
+            "priority_type": "choice_group_gap",
+            "category": key,
+            "title": "Complete one capstone option",
+            "progress_status": ps,
+            "review_status": req.get("review_status", "clear"),
+            "completed_options": req.get("completed_options", []),
+            "best_partial_option": req.get("best_partial_option"),
+            "evidence": {"source": f"requirement_results.{key}"},
+        })
+        rank += 1
+
+    # Re-rank consecutively.
+    for i, item in enumerate(items):
+        item["rank"] = i + 1
+
+    return items
 
 
 def _build_category_membership(
