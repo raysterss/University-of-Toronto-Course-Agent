@@ -289,3 +289,76 @@ class TestParseNewTools:
         )
         assert result["valid"] is False
         assert "course_code" in result["error"]
+
+
+# ---------------------------------------------------------------------------
+# audit_program_progress registry entry
+# ---------------------------------------------------------------------------
+
+
+class TestAuditProgramProgressRegistry:
+    """Verify audit_program_progress is properly registered."""
+
+    def test_registry_contains_audit(self):
+        meta = get_tool("audit_program_progress")
+        assert meta is not None
+        assert callable(meta["function"])
+
+    def test_registry_has_7_tools(self):
+        names = list_tools()
+        assert len(names) == 7
+        assert "audit_program_progress" in names
+
+    def test_required_args(self):
+        meta = get_tool("audit_program_progress")
+        assert meta["required_args"] == ["completed_courses"]
+
+    def test_dynamic_dispatch_works(self):
+        meta = get_tool("audit_program_progress")
+        result = meta["function"](["COG100H1"])
+        assert result["program_code"] == "ASMAJ1446A"
+        assert "requirement_results" in result
+
+    def test_optional_program_code(self):
+        meta = get_tool("audit_program_progress")
+        result = meta["function"](["COG100H1"], program_code="ASMAJ1446A")
+        assert result["program_code"] == "ASMAJ1446A"
+
+    def test_invalid_program_code_error(self):
+        meta = get_tool("audit_program_progress")
+        import pytest as pt
+        with pt.raises(ValueError, match="not found"):
+            meta["function"]([], program_code="INVALID")
+
+    def test_input_not_mutated(self):
+        meta = get_tool("audit_program_progress")
+        original = ["COG100H1"]
+        meta["function"](original)
+        assert original == ["COG100H1"]
+
+
+# ---------------------------------------------------------------------------
+# parse_tool_action with audit_program_progress
+# ---------------------------------------------------------------------------
+
+
+class TestParseAuditAction:
+    """Verify parse_tool_action handles audit_program_progress."""
+
+    def test_valid_audit_action_parses(self):
+        from src.agent import parse_tool_action
+        result = parse_tool_action(
+            '{"action": "tool", '
+            '"tool_name": "audit_program_progress", '
+            '"arguments": {"completed_courses": ["COG100H1", "CSC108H1"]}}'
+        )
+        assert result["valid"] is True
+        assert result["tool_name"] == "audit_program_progress"
+
+    def test_missing_completed_courses_rejected(self):
+        from src.agent import parse_tool_action
+        result = parse_tool_action(
+            '{"tool_name": "audit_program_progress", "arguments": {}}'
+        )
+        assert result["valid"] is False
+        assert "completed_courses" in result["error"]

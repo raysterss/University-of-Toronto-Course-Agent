@@ -348,6 +348,24 @@ class TestReasoningPrompt:
         assert "program requirement" in prompt.lower()
         assert "tool observation" in prompt.lower()
 
+    # -- audit tool guidance ----------------------------------------------
+
+    def test_prompt_maps_audit_to_audit_tool(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "What requirements have I completed?")
+        assert "audit_program_progress" in prompt.lower()
+
+    def test_prompt_prereq_still_maps_to_check_prerequisites(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "Can I take CSC384H1?")
+        assert "check_prerequisites" in prompt.lower()
+
+    def test_prompt_missing_courses_for_audit_triggers_clarify(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "What progress have I made?")
+        assert "clarify" in prompt.lower()
+        assert "completed" in prompt.lower()
+
     # -- prior-steps context ----------------------------------------------
 
     def test_prior_steps_context_includes_step_info(self):
@@ -1363,6 +1381,91 @@ class TestMultiStepReAct:
         lowered = system_msg.lower()
         assert "attribute every status" in lowered
         assert "program-pathway membership" in lowered
+
+    # -- generate_answer audit guidance -----------------------------------
+
+    def test_generate_answer_prompt_includes_audit_guidance(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": ["COG100H1"]}}',
+                "Audit summary.",
+            ]),
+        )
+        agent.handle_request("Audit my progress.", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "audit_program_progress" in lowered or "audit" in lowered
+
+    def test_generate_answer_prompt_forbids_credit_recalculation(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": []}}',
+                "Audit result.",
+            ]),
+        )
+        agent.handle_request("Audit.", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "do not recalculate" in lowered
+
+    def test_generate_answer_prompt_includes_degree_explorer_disclaimer(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": []}}',
+                "Audit.",
+            ]),
+        )
+        agent.handle_request("Audit.", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "degree explorer" in lowered or "not an official" in lowered
+
+    # -- audit tool through agent loop ------------------------------------
+
+    def test_audit_tool_call_succeeds(self):
+        agent = CoursePlanningAgent(
+            completed_courses=["COG100H1", "CSC108H1", "CSC148H1"],
+            model=_SequenceModel([
+                '{"action": "tool", '
+                '"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": ["COG100H1", '
+                '"CSC108H1", "CSC148H1"]}}',
+                "Your audit shows first-year requirements completed.",
+            ]),
+        )
+        result = agent.handle_request(
+            "What requirements have I completed?", max_tool_steps=1,
+        )
+        assert result["tool_called"] == "audit_program_progress"
+        assert len(result["steps"]) == 1
+        assert "requirement" in result["observation"].lower()
+
+    def test_audit_tool_in_steps(self):
+        agent = CoursePlanningAgent(
+            completed_courses=["COG100H1"],
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": ["COG100H1"]}}',
+                "Audit summary.",
+            ]),
+        )
+        result = agent.handle_request("What progress?", max_tool_steps=1)
+        assert result["steps"][0]["tool_called"] == "audit_program_progress"
 
     # -- backward compatible flat keys ------------------------------------
 

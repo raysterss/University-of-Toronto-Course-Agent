@@ -6,6 +6,8 @@ agent logic so that tools can be added or modified without changing the
 agent implementation.
 """
 
+from src.program_audit import audit_program_progress
+
 from src.tools import (
     check_exclusions,
     check_prerequisites,
@@ -73,6 +75,20 @@ TOOL_REGISTRY = {
             "with basic prerequisite eligibility checks.  Accepts an "
             "optional ``interests`` argument (list of strings) to "
             "rank matching courses first."
+        ),
+    },
+    "audit_program_progress": {
+        "function": audit_program_progress,
+        "required_args": ["completed_courses"],
+        "description": (
+            "Audit the student's program progress: evaluate completed "
+            "requirements, identify missing requirements, count "
+            "stream-pool credits, check special program rules "
+            "(300-level minimum, CSC minimum/maximum, designator "
+            "concentration), report review and verification concerns, "
+            "and return deterministic priority items.  Use for "
+            "program-progress questions — NOT for individual-course "
+            "prerequisite or metadata checks."
         ),
     },
 }

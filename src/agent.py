@@ -269,6 +269,78 @@ def _format_recommendation_observation(
     return "\n".join(lines)
 
 
+def _format_audit_observation(audit: dict) -> str:
+    """Format the program audit result into a concise observation string
+    for the model to consume.
+
+    Args:
+        audit: The dict returned by ``audit_program_progress()``.
+
+    Returns:
+        A formatted observation string.
+    """
+    lines: list[str] = []
+    ov = audit.get("overall_status", "?")
+    orv = audit.get("overall_review_status", "clear")
+    lines.append(
+        f"Program audit for {audit.get('program_code', '?')}: "
+        f"overall={ov}, review={orv}"
+    )
+
+    # Requirement summary.
+    reqs = audit.get("requirement_results", {})
+    if reqs:
+        lines.append("")
+        lines.append("Requirements:")
+        for key, req in reqs.items():
+            ps = req.get("progress_status", "?")
+            rs = req.get("review_status", "clear")
+            lines.append(f"  {key}: progress={ps}, review={rs}")
+
+    # Pool.
+    pools = audit.get("pool_results", {})
+    if pools:
+        lines.append("")
+        for pid, pool in pools.items():
+            lines.append(
+                f"Pool {pid}: completed={pool.get('credits_completed', 0)}/"
+                f"{pool.get('credits_required', '?')}cr, "
+                f"300+={pool.get('credits_at_300_plus', 0)}cr, "
+                f"status={pool.get('progress_status', '?')}"
+            )
+
+    # Special rules.
+    sr = audit.get("special_rule_results", {})
+    if sr:
+        lines.append("")
+        lines.append("Special rules:")
+        for key, rule in sr.items():
+            if isinstance(rule, dict):
+                lines.append(
+                    f"  {key}: {rule.get('rule_status', '?')}, "
+                    f"review={rule.get('review_status', 'clear')}"
+                )
+
+    # Warnings (abbreviated).
+    warnings = audit.get("warnings", [])
+    if warnings:
+        lines.append("")
+        lines.append(f"Warnings ({len(warnings)}):")
+        for w in warnings[:5]:
+            lines.append(f"  - {w[:150]}")
+
+    # Priority items (abbreviated).
+    priorities = audit.get("priority_items", [])
+    if priorities:
+        lines.append("")
+        lines.append(f"Priority items ({len(priorities)}):")
+        for p in priorities[:10]:
+            lines.append(f"  {p.get('rank', '?')}. [{p.get('priority_type', '?')}] "
+                          f"{p.get('title', '?')}")
+
+    return "\n".join(lines)
+
+
 class CoursePlanningAgent:
     """A ReAct-style agent for course planning.
 
@@ -517,7 +589,12 @@ class CoursePlanningAgent:
             "named course + program pathway questions | "
             "**get_course_metadata_status** first, then "
             "**recommend_courses_for_requirement** with the "
-            "correct program requirement tag |\n\n"
+            "correct program requirement tag |\n"
+            '| "What requirements have I completed", '
+            '"What am I missing", "How many pool credits", '
+            '"Am I within the CSC rules", program-progress or '
+            "audit questions | "
+            "**audit_program_progress** |\n\n"
             "**Important:** get_course_details is for general "
             "metadata only (title, description, department, "
             "credits) — it does NOT check prerequisite "
@@ -625,6 +702,29 @@ class CoursePlanningAgent:
             "```json\n"
             '{"action": "finish"}\n'
             "```\n\n"
+            "## Program Progress Audit\n\n"
+            "Use action=\"tool\" with audit_program_progress when "
+            "the student asks about their overall program progress. "
+            "Pass their completed course codes.  Do NOT call this "
+            "tool to check a single course prerequisite.\n\n"
+            "Example — audit request:\n"
+            'User: "What requirements have I completed? I finished '
+            'COG100H1, CSC108H1, CSC148H1, MAT135H1, MAT136H1, '
+            'and STA237H1."\n'
+            "```json\n"
+            "{\n"
+            '  "action": "tool",\n'
+            '  "tool_name": "audit_program_progress",\n'
+            '  "arguments": {\n'
+            '    "completed_courses": ["COG100H1", "CSC108H1", '
+            '"CSC148H1", "MAT135H1", "MAT136H1", "STA237H1"]\n'
+            "  }\n"
+            "}\n"
+            "```\n\n"
+            "When the student asks about progress but does NOT "
+            "provide completed courses, use action=\"clarify\" to "
+            "ask for them.  Never call audit_program_progress with "
+            "an invented or empty course list.\n\n"
             "## Clarification\n\n"
             "Use action=\"clarify\" when the student has not provided "
             "enough information to proceed.  Ask only for what is "
@@ -805,6 +905,9 @@ class CoursePlanningAgent:
                     f"review={review}. {notes_str}."
                 )
 
+            if tool_name == "audit_program_progress":
+                return _format_audit_observation(result)
+
             return f"Tool '{tool_name}' returned: {result}"
 
         except TypeError as exc:
@@ -885,6 +988,24 @@ class CoursePlanningAgent:
                     "manual_review_needed for any course.  Suggest "
                     "official verification before the student makes a "
                     "final decision.\n\n"
+                    "## Audit Results\n\n"
+                    "When the observation is from "
+                    "audit_program_progress, treat it as the source "
+                    "of truth.  Do not recalculate credits, invent "
+                    "requirement completion, or second-guess the "
+                    "audit.  Clearly distinguish:\n"
+                    "- completed requirements (progress_status=completed)\n"
+                    "- incomplete requirements (partially_completed, "
+                    "not_started)\n"
+                    "- requirements needing review "
+                    "(review_status=manual_review_needed or "
+                    "needs_official_verification)\n\n"
+                    "You may summarise the priority_items list, but "
+                    "do not convert priority items into personalised "
+                    "course recommendations.  State that the audit "
+                    "is not an official Degree Explorer result.  "
+                    "Preserve unknown, unverified, exclusion, and "
+                    "overlap warnings from the audit output.\n\n"
                     "## General Rules\n\n"
                     "State only claims supported by the observations. "
                     "Do not invent prerequisites, term offerings, or "
