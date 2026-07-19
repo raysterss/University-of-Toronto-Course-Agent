@@ -32,6 +32,7 @@
               "official_expression": "(CSC110Y1, CSC111H1) / (CSC108H1, CSC148H1)",
               "credits_needed": 1.0,
               "completion_logic": "complete_one_option",
+              "ambiguous_expression": false,
               "category": "CS Foundation",
               "options": [
                 {
@@ -54,6 +55,7 @@
               "official_expression": "(MAT130H1 / MAT135H1, MAT136H1) / (MAT148H1, MAT149H1) / MAT137Y1 / (MAT158H1, MAT159H1) / MAT157Y1",
               "credits_needed": 1.0,
               "completion_logic": "complete_one_option",
+              "ambiguous_expression": true,
               "category": "Math Foundation",
               "note": "The official expression '(MAT130H1 / MAT135H1, MAT136H1)' uses '/' between MAT130H1 and MAT135H1, and ',' before MAT136H1. The most natural reading in UofT calendar notation is: choose either MAT130H1 or MAT135H1, then take MAT136H1. This interpretation is presented as two separate sub-options below and requires official verification.",
               "verification_status": "needs_official_verification",
@@ -118,6 +120,7 @@
               "official_expression": "STA220H1 / STA237H1 / STA238H1 / STA247H1 / STA248H1 / STA255H1 / STA257H1 / PSY201H1",
               "credits_needed": 0.5,
               "completion_logic": "complete_one_option",
+              "ambiguous_expression": false,
               "category": "Statistics Requirement",
               "options": [
                 {
@@ -268,6 +271,7 @@
               "official_expression": "COG402H1 / COG403H1 / COG404H1 / COG497Y1 / COG498H1 / COG499H1",
               "credits_needed": 0.5,
               "completion_logic": "complete_one_option",
+              "ambiguous_expression": false,
               "category": "Capstone Requirement",
               "note": "COG497Y1 is a 1.0 credit full-year course. All other capstone options are 0.5 credit half-courses.",
               "options": [

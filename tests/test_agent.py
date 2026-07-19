@@ -1467,6 +1467,159 @@ class TestMultiStepReAct:
         result = agent.handle_request("What progress?", max_tool_steps=1)
         assert result["steps"][0]["tool_called"] == "audit_program_progress"
 
+    # -- observation formatting -------------------------------------------
+
+    def test_audit_observation_includes_exclusion_reason(self):
+        agent = CoursePlanningAgent(
+            completed_courses=["CSC108H1", "CSC148H1"],
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": ["CSC108H1", '
+                '"CSC148H1"]}}',
+                "Audit.",
+            ]),
+        )
+        result = agent.handle_request("Audit.", max_tool_steps=1)
+        obs = result["steps"][0]["observation"]
+        assert "exclusion" in obs.lower()
+
+    def test_audit_observation_includes_ambiguity_reason(self):
+        agent = CoursePlanningAgent(
+            completed_courses=["MAT135H1", "MAT136H1"],
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": ["MAT135H1", '
+                '"MAT136H1"]}}',
+                "Audit.",
+            ]),
+        )
+        result = agent.handle_request("Audit.", max_tool_steps=1)
+        obs = result["steps"][0]["observation"]
+        assert "ambiguity" in obs.lower()
+
+    def test_capstone_not_manual_review_in_observation(self):
+        agent = CoursePlanningAgent(
+            completed_courses=[],
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": []}}',
+                "Audit.",
+            ]),
+        )
+        result = agent.handle_request("Audit.", max_tool_steps=1)
+        obs = result["steps"][0]["observation"]
+        # Capstone line should show review=clear, not manual_review_needed.
+        capstone_lines = [l for l in obs.split("\n")
+                          if "fourth_year_capstone" in l]
+        if capstone_lines:
+            assert "review=clear" in capstone_lines[0]
+
+    def test_priority_observation_includes_category(self):
+        agent = CoursePlanningAgent(
+            completed_courses=["COG100H1"],
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": ["COG100H1"]}}',
+                "Audit.",
+            ]),
+        )
+        result = agent.handle_request("Audit.", max_tool_steps=1)
+        obs = result["steps"][0]["observation"]
+        # Priority items should include the category name.
+        assert "first_year_required" in obs or "second_year" in obs
+
+    # -- answer prompt anti-conflation ------------------------------------
+
+    def test_answer_prompt_forbids_conflating_warning_types(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": []}}',
+                "Audit.",
+            ]),
+        )
+        agent.handle_request("Audit.", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "do not describe an exclusion conflict" in lowered
+        assert "do not describe an ambiguous expression" in lowered
+
+    def test_answer_prompt_forbids_assuming_mutual_exclusion(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": []}}',
+                "Audit.",
+            ]),
+        )
+        agent.handle_request("Audit.", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "do not assume it is mutual" in lowered
+        assert "exclude each other" in lowered
+        assert '"mutual exclusion"' in lowered
+
+    def test_answer_prompt_distinguishes_one_direction_exclusion(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": []}}',
+                "Audit.",
+            ]),
+        )
+        agent.handle_request("Audit.", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "lists" in lowered and "as an exclusion" in lowered
+
+    def test_answer_prompt_provisional_completion_wording(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": []}}',
+                "Audit.",
+            ]),
+        )
+        agent.handle_request("Audit.", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "provisionally completed" in lowered
+        assert "requires review" in lowered
+
+    def test_answer_prompt_forbids_definitive_completion_with_review(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": []}}',
+                "Audit.",
+            ]),
+        )
+        agent.handle_request("Audit.", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "do not claim" in lowered
+        assert "completed all" in lowered
+
     # -- backward compatible flat keys ------------------------------------
 
     def test_flat_keys_reflect_first_successful_step(self):

@@ -1665,3 +1665,96 @@ def test_priority_credits_remaining_non_negative():
     for item in result["priority_items"]:
         if "credits_remaining" in item:
             assert item["credits_remaining"] >= 0
+
+
+# =========================================================================
+# Explicit ambiguous_expression metadata
+# =========================================================================
+
+
+def _get_all_choice_groups() -> dict[str, dict]:
+    """Return all complete_one_option choice groups from the program."""
+    prog = load_program_by_code("ASMAJ1446A")
+    reqs = prog["completion_requirements"]
+    groups = {}
+    for section_key in ["first_year", "second_year", "fourth_year"]:
+        section = reqs.get(section_key, {})
+        for cg in section.get("choice_groups", []):
+            if cg.get("completion_logic") == "complete_one_option":
+                groups[cg["group_id"]] = cg
+    return groups
+
+
+def test_all_choice_groups_have_explicit_ambiguous_expression():
+    groups = _get_all_choice_groups()
+    assert len(groups) == 4
+    for gid, cg in groups.items():
+        assert isinstance(cg.get("ambiguous_expression"), bool), (
+            f"{gid}: missing or non-boolean ambiguous_expression"
+        )
+
+
+def test_cs_pathway_not_ambiguous():
+    groups = _get_all_choice_groups()
+    assert groups["first_year_intro_cs_pathway"]["ambiguous_expression"] is False
+
+
+def test_math_pathway_is_ambiguous():
+    groups = _get_all_choice_groups()
+    assert groups["first_year_math_pathway"]["ambiguous_expression"] is True
+
+
+def test_statistics_not_ambiguous():
+    groups = _get_all_choice_groups()
+    assert groups["second_year_statistics_choice"]["ambiguous_expression"] is False
+
+
+def test_capstone_not_ambiguous():
+    groups = _get_all_choice_groups()
+    assert groups["fourth_year_capstone_choice"]["ambiguous_expression"] is False
+
+
+def test_capstone_review_clear_when_not_started():
+    result = audit_program_progress([])
+    cap = result["requirement_results"]["fourth_year_capstone_choice"]
+    assert cap["progress_status"] == "not_started"
+    assert cap["review_status"] == "clear"
+
+
+def test_capstone_note_preserved():
+    groups = _get_all_choice_groups()
+    assert "COG497Y1" in groups["fourth_year_capstone_choice"]["note"]
+
+
+def test_math_pathway_remains_manual_review():
+    result = audit_program_progress(["MAT135H1", "MAT136H1"])
+    math = result["requirement_results"]["first_year_math_pathway"]
+    assert math["review_status"] == "manual_review_needed"
+
+
+def test_missing_ambiguous_expression_manual_review():
+    idx = build_course_index()
+    bad_group = {
+        "group_id": "test_no_ambig",
+        "completion_logic": "complete_one_option",
+        # No ambiguous_expression field.
+        "options": [{"option_id": "good", "required_courses": ["CSC108H1"],
+                      "credits_required": 0.5}],
+    }
+    result = evaluate_choice_group(["CSC108H1"], bad_group, idx)
+    assert result["progress_status"] == "completed"
+    assert result["review_status"] == "manual_review_needed"
+    assert any("ambiguous_expression" in w for w in result["warnings"])
+
+
+def test_non_bool_ambiguous_expression_manual_review():
+    idx = build_course_index()
+    bad_group = {
+        "group_id": "test_str_ambig",
+        "completion_logic": "complete_one_option",
+        "ambiguous_expression": "yes",  # not a bool
+        "options": [{"option_id": "good", "required_courses": ["CSC108H1"],
+                      "credits_required": 0.5}],
+    }
+    result = evaluate_choice_group(["CSC108H1"], bad_group, idx)
+    assert result["review_status"] == "manual_review_needed"

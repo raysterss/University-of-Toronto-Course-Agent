@@ -287,7 +287,7 @@ def _format_audit_observation(audit: dict) -> str:
         f"overall={ov}, review={orv}"
     )
 
-    # Requirement summary.
+    # Requirement summary (with warning reasons).
     reqs = audit.get("requirement_results", {})
     if reqs:
         lines.append("")
@@ -295,7 +295,27 @@ def _format_audit_observation(audit: dict) -> str:
         for key, req in reqs.items():
             ps = req.get("progress_status", "?")
             rs = req.get("review_status", "clear")
-            lines.append(f"  {key}: progress={ps}, review={rs}")
+            req_warnings = req.get("warnings", [])
+            reason_str = ""
+            if rs != "clear" and req_warnings:
+                # Extract short reasons from warnings (max 3, max 100 chars each).
+                short = []
+                for w in req_warnings[:3]:
+                    # Abbreviate long warning text.
+                    w_short = w[:100]
+                    # Classify the warning type.
+                    if "exclusion conflict" in w.lower():
+                        w_short = "exclusion: " + w_short
+                    elif "ambiguous" in w.lower() or "official expression" in w.lower():
+                        w_short = "ambiguity: " + w_short
+                    elif "official_verification" in w.lower() or "needs_official" in w.lower():
+                        w_short = "unverified: " + w_short
+                    short.append(w_short)
+                reason_str = ", ".join(short)
+            if reason_str:
+                lines.append(f"  {key}: progress={ps}, review={rs}, reasons=[{reason_str}]")
+            else:
+                lines.append(f"  {key}: progress={ps}, review={rs}")
 
     # Pool.
     pools = audit.get("pool_results", {})
@@ -329,14 +349,16 @@ def _format_audit_observation(audit: dict) -> str:
         for w in warnings[:5]:
             lines.append(f"  - {w[:150]}")
 
-    # Priority items (abbreviated).
+    # Priority items (abbreviated, with category).
     priorities = audit.get("priority_items", [])
     if priorities:
         lines.append("")
         lines.append(f"Priority items ({len(priorities)}):")
         for p in priorities[:10]:
-            lines.append(f"  {p.get('rank', '?')}. [{p.get('priority_type', '?')}] "
-                          f"{p.get('title', '?')}")
+            cat = p.get("category", "?")
+            ptype = p.get("priority_type", "?")
+            title = p.get("title", "?")
+            lines.append(f"  {p.get('rank', '?')}. [{ptype}] {cat}: {title}")
 
     return "\n".join(lines)
 
@@ -1000,6 +1022,35 @@ class CoursePlanningAgent:
                     "- requirements needing review "
                     "(review_status=manual_review_needed or "
                     "needs_official_verification)\n\n"
+                    "Attribute each review warning to its actual "
+                    "source.  Do NOT describe an exclusion conflict "
+                    "as metadata or verification uncertainty.  Do "
+                    "NOT describe an ambiguous expression as an "
+                    "unverified course.  Use the formatted observation's "
+                    "reasons= field to distinguish exclusion, "
+                    "ambiguity, unverified, and invalid-option causes.\n\n"
+                    "## Directional Exclusion Wording\n\n"
+                    "When the audit reports an exclusion relationship, "
+                    "do NOT assume it is mutual unless both directions "
+                    "are explicitly recorded.  Use wording such as "
+                    "\"CSC108H1 lists CSC148H1 as an exclusion\" or "
+                    "\"An exclusion relationship is recorded between "
+                    "these courses.\"  Do not say the courses "
+                    "\"exclude each other\" or describe a "
+                    "\"mutual exclusion\" unless the observation "
+                    "confirms both directions.\n\n"
+                    "## Provisional Completion Wording\n\n"
+                    "When a requirement has progress_status=completed "
+                    "but review_status is NOT clear, describe it as "
+                    "provisionally completed, not definitively "
+                    "completed.  Use wording such as \"appears "
+                    "completed based on the structured audit, but "
+                    "requires review\" or \"provisionally completed.\" "
+                    "In overall summaries, do NOT claim you have "
+                    "\"completed all first-year requirements\" when "
+                    "any first-year requirement still has "
+                    "manual_review_needed or "
+                    "needs_official_verification.\n\n"
                     "You may summarise the priority_items list, but "
                     "do not convert priority items into personalised "
                     "course recommendations.  State that the audit "

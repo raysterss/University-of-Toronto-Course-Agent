@@ -329,8 +329,12 @@ def evaluate_choice_group(
         ``option_results``, and ``warnings``.
     """
     completion_logic = group_definition.get("completion_logic", "")
-    ambiguous = bool(group_definition.get("note") or
-                     group_definition.get("verification_status") == "needs_official_verification")
+    # Read explicit ambiguous_expression field (no note/prose heuristics).
+    ambig_raw = group_definition.get("ambiguous_expression")
+    if isinstance(ambig_raw, bool):
+        ambiguous = ambig_raw
+    else:
+        ambiguous = None  # missing or invalid — handled below
 
     # Handle unsupported or missing logic.
     if completion_logic != "complete_one_option":
@@ -424,7 +428,15 @@ def evaluate_choice_group(
             "Progress is provisional."
         )
 
-    if ambiguous:
+    if ambiguous is None:
+        # Missing or non-boolean ambiguous_expression.
+        review = "manual_review_needed"
+        warnings.append(
+            "ambiguous_expression metadata is missing or invalid — "
+            "cannot determine whether this requirement's official "
+            "expression is ambiguous."
+        )
+    elif ambiguous:
         review = "manual_review_needed"
         note = group_definition.get("note", "")
         if note:
