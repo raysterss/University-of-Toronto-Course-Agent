@@ -85,7 +85,7 @@ performed by deterministic Python logic — not by the model.
 
 ## Reliability and evaluation
 
-The current test suite passes locally with **554 automated tests** (`python3 -m pytest`).
+The current test suite passes locally with **558 automated tests** (`python3 -m pytest`).
 
 **Core-5 evaluation batch** — a small curated set of 5 representative
 cases run against the real TokenHub model:
@@ -162,7 +162,7 @@ cp .env.example .env
 
 ```bash
 python3 -m pytest
-# 554 passed
+# 558 passed
 ```
 
 All tests use MockModel — no API keys or network calls required.
