@@ -1620,6 +1620,89 @@ class TestMultiStepReAct:
         assert "do not claim" in lowered
         assert "completed all" in lowered
 
+    # -- retake / exclusion guidance -------------------------------------
+
+    def test_answer_prompt_forbids_generic_retake_claims(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "check_exclusions", '
+                '"arguments": {"course_code": "CSC108H1", '
+                '"completed_courses": ["CSC148H1"]}}',
+                "Exclusion found.",
+            ]),
+        )
+        agent.handle_request("Can I retake CSC108H1?", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "cannot determine" in lowered or "cannot determine whether" in lowered
+        # Prompt forbids generic retake claims (listed as anti-examples).
+        assert "do not" in lowered
+        assert "unsupported generalizations" in lowered
+
+    def test_answer_prompt_forbids_retake_permission_without_evidence(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "check_exclusions", '
+                '"arguments": {"course_code": "CSC108H1", '
+                '"completed_courses": []}}',
+                "Exclusion.",
+            ]),
+        )
+        agent.handle_request("Retake?", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        # Prompt explicitly lists these as forbidden wording.
+        assert '"you can retake' in lowered  # listed as anti-example
+        assert '"you cannot retake' in lowered  # listed as anti-example
+        assert "do not" in lowered
+
+    def test_answer_prompt_forbids_claiming_no_credit_without_evidence(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "check_exclusions", '
+                '"arguments": {"course_code": "CSC108H1", '
+                '"completed_courses": []}}',
+                "Exclusion.",
+            ]),
+        )
+        agent.handle_request("Retake?", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        # Prompt lists these as examples of over-strengthening to avoid.
+        assert "no additional credit" in lowered  # anti-example
+        assert "will not count" in lowered  # anti-example
+        assert "do not strengthen" in lowered
+
+    def test_answer_prompt_requires_may_affect_wording(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "check_exclusions", '
+                '"arguments": {"course_code": "CSC108H1", '
+                '"completed_courses": []}}',
+                "Exclusion.",
+            ]),
+        )
+        agent.handle_request("Retake?", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "may be affected" in lowered or "may affect" in lowered
+
     # -- backward compatible flat keys ------------------------------------
 
     def test_flat_keys_reflect_first_successful_step(self):
