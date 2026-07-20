@@ -100,9 +100,7 @@ def aggregate_by_category(
         behavior_total_count = 0
 
         for r in cat_results:
-            # A case passes when all behaviors pass.
-            all_behaviors_pass = all(br.passed for br in r.behavior_results)
-            if all_behaviors_pass:
+            if _case_passed(r):
                 passed_count += 1
 
             if r.tool_called is not None or r.signals.get("expected_tools_match") is not None:

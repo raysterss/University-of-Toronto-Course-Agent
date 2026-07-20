@@ -1314,3 +1314,73 @@ class TestEligibilityOrLogic:
             signals,
         )
         assert passed is True, f"Expected PASS, got: {ev}"
+
+
+# =========================================================================
+# Aggregation consistency — _case_passed vs aggregate_by_category
+# =========================================================================
+
+from eval.run_full_evaluation import _case_passed, aggregate_by_category  # noqa: E402
+
+
+def test_empty_behaviors_tool_fail_case_verdict_fail():
+    er = _make_eval_result(behaviors=[], tool_pass=False)
+    assert _case_passed(er) is False
+
+
+def test_empty_behaviors_tool_pass_case_verdict_pass():
+    er = _make_eval_result(behaviors=[], tool_pass=True)
+    assert _case_passed(er) is True
+
+
+def test_empty_behaviors_tool_fail_category_aggregate_fail():
+    er = _make_eval_result(case_id="c1", behaviors=[], tool_pass=False)
+    cases = [{"case_id": "c1", "category": "test"}]
+    summaries = aggregate_by_category([er], cases)
+    assert summaries[0].passed == 0
+    assert summaries[0].failed == 1
+
+
+def test_empty_behaviors_tool_pass_category_aggregate_pass():
+    er = _make_eval_result(case_id="c2", behaviors=[], tool_pass=True)
+    cases = [{"case_id": "c2", "category": "test"}]
+    summaries = aggregate_by_category([er], cases)
+    assert summaries[0].passed == 1
+
+
+def test_one_behavior_fails_category_aggregate_fail():
+    er = _make_eval_result(
+        case_id="c3", behaviors=[("Should pass", False)], tool_pass=True,
+    )
+    cases = [{"case_id": "c3", "category": "test"}]
+    summaries = aggregate_by_category([er], cases)
+    assert summaries[0].passed == 0
+    assert summaries[0].failed == 1
+
+
+def test_all_behaviors_pass_category_aggregate_pass():
+    er = _make_eval_result(
+        case_id="c4", behaviors=[("A", True), ("B", True)], tool_pass=True,
+    )
+    cases = [{"case_id": "c4", "category": "test"}]
+    summaries = aggregate_by_category([er], cases)
+    assert summaries[0].passed == 1
+
+
+def test_summary_and_category_agree():
+    """Summary table and category breakdown always match."""
+    results = [
+        _make_eval_result(case_id="p", behaviors=[("A", True)], tool_pass=True),
+        _make_eval_result(case_id="f", behaviors=[("B", False)], tool_pass=True),
+        _make_eval_result(case_id="e", behaviors=[], tool_pass=False),
+    ]
+    cases = [
+        {"case_id": "p", "category": "cat"},
+        {"case_id": "f", "category": "cat"},
+        {"case_id": "e", "category": "cat"},
+    ]
+    summary_passed = sum(1 for r in results if _case_passed(r))
+    summaries = aggregate_by_category(results, cases)
+    assert summaries[0].passed == summary_passed, (
+        f"Category passed={summaries[0].passed} != summary passed={summary_passed}"
+    )
