@@ -527,12 +527,16 @@ class EvalResult:
 def evaluate_case(
     case: dict[str, Any],
     agent: CoursePlanningAgent,
+    agent_result: dict[str, Any] | None = None,
 ) -> EvalResult:
     """Run one evaluation case through the agent and score it.
 
     Args:
         case: A single evaluation case dict from ``evaluation_cases.json``.
         agent: An initialised :class:`CoursePlanningAgent`.
+        agent_result: Optional pre-computed result from
+            ``agent.handle_request()``.  When provided, the agent is
+            NOT called again — signals are extracted from this result.
 
     Returns:
         An :class:`EvalResult` with tool-usage and behavior scores.
@@ -544,14 +548,16 @@ def evaluate_case(
     expected_behaviors = case.get("expected_behaviors", [])
     failure_conditions = case.get("failure_conditions", [])
 
-    # --- run agent --------------------------------------------------------
-    # Temporarily set completed_courses for this case.
-    original_courses = agent.completed_courses
-    agent.completed_courses = list(completed)
-    try:
-        result = agent.handle_request(user_query)
-    finally:
-        agent.completed_courses = original_courses
+    # --- run agent (or use provided result) ------------------------------
+    if agent_result is not None:
+        result = agent_result
+    else:
+        original_courses = agent.completed_courses
+        agent.completed_courses = list(completed)
+        try:
+            result = agent.handle_request(user_query)
+        finally:
+            agent.completed_courses = original_courses
 
     # --- extract signals -------------------------------------------------
     signals = extract_signals(result)

@@ -695,3 +695,74 @@ class TestCore5ExpectedTools:
         assert case["expected_tools"] == []
         behaviors = [b.lower() for b in case["expected_behaviors"]]
         assert any("clarify" in b for b in behaviors)
+
+
+# =========================================================================
+# Rule verdict unification — _case_passed semantics
+# =========================================================================
+
+
+def test_rule_verdict_fails_when_behaviors_partial():
+    """Behavior failure + correct tools → Rule verdict FAIL."""
+    from eval.run_evaluation import EvalResult, BehaviorResult, extract_signals
+    from eval.run_full_evaluation import _case_passed
+
+    brs = [
+        BehaviorResult("Calls tool", True, "ok"),
+        BehaviorResult("Mentions status", False, "no match"),
+    ]
+    signals = extract_signals({
+        "thought": "...", "tool_called": "check_prerequisites",
+        "observation": "not_eligible.", "final_answer": "...",
+    })
+    er = EvalResult(
+        case_id="t", title="T", user_query="Q",
+        tool_called="check_prerequisites", tool_pass=True,
+        behavior_results=brs, signals=signals,
+    )
+    # Old tool_pass-only → PASS (wrong).
+    assert er.tool_pass is True
+    # New _case_passed → FAIL (correct).
+    assert _case_passed(er) is False
+
+
+def test_rule_verdict_matches_spy_model_execution():
+    """Using a spy model, verify evaluate_case shares agent_result."""
+    from src.agent import CoursePlanningAgent
+    from eval.run_evaluation import evaluate_case
+    from eval.run_full_evaluation import _case_passed
+
+    agent = CoursePlanningAgent()
+    # Pre-computed result that includes both tools.
+    precomputed = {
+        "thought": "...",
+        "tool_called": "check_prerequisites",
+        "observation": "not_eligible.",
+        "steps": [
+            {"thought": "...", "tool_called": "check_prerequisites",
+             "arguments": {"course_code": "CSC384H1",
+                           "completed_courses": ["CSC148H1"]},
+             "observation": "not_eligible."},
+            {"thought": "...", "tool_called": "check_term_availability",
+             "arguments": {"course_code": "CSC384H1",
+                           "target_term": "Winter"},
+             "observation": "available."},
+        ],
+        "final_answer": "CSC384H1 is available in Winter but you are not eligible.",
+        "stop_reason": "max_steps",
+    }
+    case = {
+        "case_id": "multi", "title": "T",
+        "completed_courses": ["CSC148H1"],
+        "user_query": "Can I take CSC384H1?",
+        "expected_tools": ["check_prerequisites", "check_term_availability"],
+        "expected_tool_sequence": ["check_prerequisites",
+                                    "check_term_availability"],
+        "expected_behaviors": [],
+        "failure_conditions": [],
+    }
+    result = evaluate_case(case, agent, agent_result=precomputed)
+    # Both tools in the precomputed result → tool_pass=True.
+    assert result.tool_pass is True
+    # With no behaviors, _case_passed falls back to tool_pass.
+    assert _case_passed(result) is True

@@ -665,9 +665,10 @@ def run_batch(
             tools_called = [s["tool_called"] for s in steps]
             result_entry["tools_called"] = tools_called
 
-            # --- rule-based evaluation -----------------------------------
-            rule_result = evaluate_case(case, agent)
-            rule_verdict = "PASS" if rule_result.tool_pass else "FAIL"
+            # --- rule-based evaluation (re-uses the same agent_result) ---
+            rule_result = evaluate_case(case, agent, agent_result=agent_result)
+            from eval.run_full_evaluation import _case_passed  # noqa: E402
+            rule_verdict = "PASS" if _case_passed(rule_result) else "FAIL"
             result_entry["rule_verdict"] = rule_verdict
 
             # --- judge ----------------------------------------------------
@@ -784,9 +785,9 @@ def run_single_case(
         print(f"ERROR: Agent execution failed — {exc}")
         sys.exit(1)
 
-    # --- rule-based evaluation -------------------------------------------
+    # --- rule-based evaluation (re-uses the same agent_result) -----------
     print("Running rule-based evaluation ...")
-    rule_result = evaluate_case(case, agent)
+    rule_result = evaluate_case(case, agent, agent_result=agent_result)
 
     # --- judge ------------------------------------------------------------
     print("Sending to LLM judge ...")

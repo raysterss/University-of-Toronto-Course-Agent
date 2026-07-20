@@ -1384,3 +1384,60 @@ def test_summary_and_category_agree():
     assert summaries[0].passed == summary_passed, (
         f"Category passed={summaries[0].passed} != summary passed={summary_passed}"
     )
+
+
+# =========================================================================
+# evaluate_case with pre-computed agent_result
+# =========================================================================
+
+
+def test_evaluate_case_uses_existing_agent_result():
+    """When agent_result is provided, handle_request is NOT called."""
+    from src.agent import CoursePlanningAgent
+    from src.model import MockModel
+
+    agent = CoursePlanningAgent(model=MockModel())
+    precomputed = {
+        "thought": "...",
+        "tool_called": "check_prerequisites",
+        "observation": "not_eligible.",
+        "steps": [{
+            "thought": "...", "tool_called": "check_prerequisites",
+            "arguments": {"course_code": "CSC384H1",
+                          "completed_courses": ["CSC148H1"]},
+            "observation": "not_eligible.",
+        }],
+        "final_answer": "You cannot take CSC384H1.",
+        "stop_reason": "max_steps",
+    }
+    case = {
+        "case_id": "tc", "title": "T",
+        "completed_courses": ["CSC148H1"],
+        "user_query": "Can I take CSC384H1?",
+        "expected_tools": ["check_prerequisites"],
+        "expected_behaviors": [],
+        "failure_conditions": [],
+    }
+    result = evaluate_case(case, agent, agent_result=precomputed)
+    assert result.tool_pass is True
+    assert result.tool_called == "check_prerequisites"
+
+
+def test_evaluate_case_backward_compatibility():
+    """Without agent_result, agent.handle_request() still runs."""
+    from src.agent import CoursePlanningAgent
+    from src.model import MockModel
+
+    agent = CoursePlanningAgent(model=MockModel())
+    case = {
+        "case_id": "tc", "title": "T",
+        "completed_courses": [],
+        "user_query": "Q?",
+        "expected_tools": [],
+        "expected_behaviors": [],
+        "failure_conditions": [],
+    }
+    result = evaluate_case(case, agent)
+    assert isinstance(result, EvalResult)
+    # MockModel returns "Mock model response" → no parseable JSON → no tool.
+    assert result.tool_pass is True  # empty expected_tools
