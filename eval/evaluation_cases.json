@@ -27,15 +27,13 @@
         "Passes the student's completed_courses for prerequisite checks.",
         "Passes interests=['AI', 'machine learning'] or similar to rank AI/ML courses first.",
         "Mentions specific AI/ML courses such as CSC311H1, CSC384H1, or CSC413H1 when they match.",
-        "Notes prerequisite_status for each recommended course.",
-        "Mentions the CSC 1.5-credit cap for 300-/400-level CSC courses if relevant.",
+        "Notes prerequisite_status for the courses explicitly recommended in the final answer.",
         "Includes a verification reminder at the end."
       ],
       "failure_conditions": [
         "Uses invalid argument names like 'requirement_description' instead of 'requirement_tag'.",
         "Fails to include the student's completed_courses in the tool call.",
         "Invented course codes or interest tags not in the data.",
-        "Omits the CSC program restriction note for 300-/400-level CSC courses.",
         "Does not mention term availability (some pool courses have UNKNOWN terms)."
       ]
     },
@@ -594,7 +592,7 @@
         "Reports alternatives from the retrieved math pathway observation.",
         "Does not claim MAT137Y1 is absent based on preview absence from another pool.",
         "Does not make definitive claims about MAT137Y1 availability or recommendation.",
-        "Advises verifying with official sources before enrolling."
+        "Includes a verification reminder at the end."
       ],
       "failure_conditions": [
         "Presents MAT137Y1 as confirmed and available without any uncertainty.",

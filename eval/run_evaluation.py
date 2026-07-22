@@ -163,12 +163,14 @@ def extract_signals(result: dict[str, Any]) -> dict[str, Any]:
         tool_call_count = len(steps)
         tool_sequence = tools_called
         observations = [s.get("observation", "") for s in steps]
+        tool_arguments = [s.get("arguments", {}) for s in steps]
     else:
         # Backward-compatible single-step fallback.
         tools_called = [tool_called] if tool_called else []
         tool_call_count = len(tools_called)
         tool_sequence = tools_called
         observations = [observation] if observation else []
+        tool_arguments = [{}] if tool_called else []
 
     # Combine ALL text fields for keyword searching.
     all_text = " ".join([
@@ -185,6 +187,7 @@ def extract_signals(result: dict[str, Any]) -> dict[str, Any]:
         "tool_call_count": tool_call_count,
         "tool_sequence": tool_sequence,
         "observations": observations,
+        "tool_arguments": tool_arguments,
         # Tool matching — filled by caller.
         "expected_tools_match": None,
         "sequence_match": None,
@@ -492,6 +495,139 @@ def _check_one_behavior(
              "no affirmative enrollment claim found"
              if not has_affirmative
              else "affirmative enrollment claim detected")
+        )
+
+    # --- completed_courses argument check ---
+    if "completed_courses" in lowered and ("pass" in lowered
+                                             or "argument" in lowered
+                                             or "prerequisite" in lowered):
+        # Check that tool arguments contain completed_courses.
+        args = signals.get("tool_arguments", [])
+        has_completed = any(
+            "completed_courses" in a for a in args
+        )
+        checks.append(
+            (has_completed,
+             "completed_courses found in tool arguments"
+             if has_completed
+             else "completed_courses NOT found in tool arguments")
+        )
+
+    # --- interests argument check ---
+    if "interests" in lowered and ("ai" in lowered
+                                    or "machine learning" in lowered
+                                    or "ml" in lowered):
+        args = signals.get("tool_arguments", [])
+        has_interests = False
+        for a in args:
+            interests = a.get("interests", [])
+            if isinstance(interests, list):
+                interest_text = " ".join(str(i).lower() for i in interests)
+                if ("ai" in interest_text
+                        or "artificial intelligence" in interest_text
+                        or "machine learning" in interest_text
+                        or "ml" in interest_text):
+                    has_interests = True
+                    break
+        checks.append(
+            (has_interests,
+             "interests with AI/ML found in tool arguments"
+             if has_interests
+             else "interests with AI/ML NOT found in tool arguments")
+        )
+
+    # --- prerequisite_status mention check ---
+    if ("prerequisite_status" in lowered
+            or ("prerequisite" in lowered
+                and ("status" in lowered or "eligibility" in lowered
+                     or "eligible" in lowered))):
+        prereq_terms = [
+            "prerequisite_status", "prerequisite check",
+            "prerequisites are", "prerequisite eligibility",
+            "not_eligible", "not eligible",
+            "manual_review_needed", "manual review",
+        ]
+        has_prereq = any(term in combined for term in prereq_terms)
+        checks.append(
+            (has_prereq,
+             "prerequisite status mentioned in answer"
+             if has_prereq
+             else "prerequisite status NOT mentioned in answer")
+        )
+
+    # --- advising / credit implication check ---
+    if ("advising" in lowered or "advisor" in lowered
+            or "academic advising" in lowered) \
+       and ("credit" in lowered or "exclusion" in lowered
+            or "overlap" in lowered or "program counting" in lowered):
+        advising_terms = [
+            "advisor", "advising", "academic advising",
+            "registrar", "department",
+        ]
+        credit_terms = [
+            "credit", "credit implications", "program counting",
+            "count toward", "exclusion", "overlap",
+        ]
+        has_advising = any(t in combined for t in advising_terms)
+        has_credit = any(t in combined for t in credit_terms)
+        checks.append(
+            (has_advising and has_credit,
+             f"advising language: {has_advising}, credit language: {has_credit}")
+        )
+
+    # --- completed-courses clarification check ---
+    if ("completed course" in lowered
+            and ("eligibility" in lowered or "ask" in lowered)):
+        cc_terms = ["completed courses", "courses have you completed",
+                     "what courses have you completed",
+                     "courses completed so far", "which courses have you"]
+        has_cc = any(t in combined for t in cc_terms)
+        checks.append(
+            (has_cc,
+             "asks about completed courses"
+             if has_cc
+             else "does not ask about completed courses")
+        )
+
+    # --- no-tool / no-determination check ---
+    if ("does not call" in lowered and "tool" in lowered) \
+       or ("make" in lowered and "eligibility determination" in lowered
+           and "not" in lowered):
+        tools_called_list = signals.get("tools_called", [])
+        no_tools = len(tools_called_list) == 0
+        claim_terms = ["you are eligible", "you are not eligible",
+                        "you can take", "you cannot take",
+                        "you should take", "you're eligible",
+                        "you're not eligible"]
+        no_claim = not any(t in combined for t in claim_terms)
+        checks.append(
+            (no_tools and no_claim,
+             f"no tools called: {no_tools}, no eligibility claim: {no_claim}")
+        )
+
+    # --- specific / actionable clarification check ---
+    if ("clarification question" in lowered or "clarify" in lowered) \
+       and ("specific" in lowered or "actionable" in lowered):
+        is_question = "?" in combined
+        has_field = "completed course" in combined or "course" in combined
+        checks.append(
+            (is_question and has_field,
+             f"clarification question: {is_question}, "
+             f"mentions field: {has_field}")
+        )
+
+    # --- no course advice before missing info check ---
+    if "does not provide course advice" in lowered \
+       or ("no course advice" in lowered) \
+       or ("before receiving" in lowered and "missing" in lowered):
+        advice_terms = ["recommend", "you should take", "consider taking",
+                         "i suggest", "you could take", "i recommend"]
+        no_advice = not any(t in combined for t in advice_terms)
+        checks.append(
+            (no_advice,
+             "no course recommendations given"
+             if no_advice
+             else "course recommendations found")
         )
 
     # Fallback: if no specific checks were generated, mark as unchecked.

@@ -763,6 +763,16 @@ class CoursePlanningAgent:
             'planning for?"\n'
             "}\n"
             "```\n\n"
+            "Eligibility question without completed courses:\n"
+            'User: "Am I eligible for CSC311H1?"\n'
+            "```json\n"
+            "{\n"
+            '  "action": "clarify",\n'
+            '  "question": "Which courses have you completed? '
+            "I need your completed courses to check your eligibility "
+            'for CSC311H1."\n'
+            "}\n"
+            "```\n\n"
             "## Other Examples\n\n"
             "Exclusion check:\n"
             "```json\n"
@@ -803,11 +813,20 @@ class CoursePlanningAgent:
             "9. For multi-part questions (eligibility + term): "
             "call check_prerequisites FIRST, then "
             "check_term_availability.  Do NOT skip to term "
-            "availability before checking prerequisites.\n"
+            "availability before checking prerequisites.  Even "
+            "if prerequisites are not met, you MUST still check "
+            "term availability — the user asked about a specific "
+            "term and that answer is still part of the question.  "
+            "Never say term availability is irrelevant when the "
+            "user explicitly asked about it.\n"
             "10. Use action=\"clarify\" when essential information is "
             "missing.  Ask a specific question targeting only the "
             "missing information.  Do not invent data or give "
-            "course advice before receiving it.\n"
+            "course advice before receiving it.  If the user asks "
+            "about eligibility for a course but does not state "
+            "their completed courses, ask for them — do NOT call "
+            "check_prerequisites with an empty or invented "
+            "completed_courses list.\n"
             "11. Never infer that a course is absent from a full "
             "result set merely because it is absent from a preview. "
             "The observation preview shows at most 10 courses from "
@@ -819,7 +838,14 @@ class CoursePlanningAgent:
             "and UNKNOWN statuses.  When a course is unverified, "
             "explain that status before giving a recommendation. "
             "Suggest alternatives only when they appear in "
-            "retrieved tool observations."
+            "retrieved tool observations.\n"
+            "13. Never invent specific prerequisite course codes.  "
+            "If a tool observation only provides "
+            "prerequisite_status (eligible, not_eligible, "
+            "manual_review_needed), you may state whether "
+            "prerequisites are met or need review — but do NOT "
+            "name individual missing prerequisite courses unless "
+            "those course codes appear in the tool observation."
         )
 
         messages: list[dict] = [
@@ -1080,7 +1106,11 @@ class CoursePlanningAgent:
                     "## General Rules\n\n"
                     "State only claims supported by the observations. "
                     "Do not invent prerequisites, term offerings, or "
-                    "program rules. "
+                    "program rules.  Never name specific prerequisite "
+                    "course codes unless those codes appear in the "
+                    "tool observations.  If the user asked about a "
+                    "term, always report term availability — never "
+                    "say it is irrelevant.  "
                     "Preserve UNKNOWN, manual_review_needed, and "
                     "verification warnings exactly as reported."
                 ),

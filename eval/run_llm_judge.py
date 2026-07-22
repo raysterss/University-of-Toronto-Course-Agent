@@ -158,6 +158,18 @@ def build_judge_messages(
 # =========================================================================
 
 
+# Prompt appended when the judge response fails validation and a retry
+# is attempted.
+JUDGE_RETRY_SUFFIX = (
+    "\n\nYour previous response failed validation.  Please fix:\n"
+    "- Every applicable dimension must have a numeric score 1–5.\n"
+    "- Non-applicable dimensions must set applicable=false and may "
+    "use score=null.\n"
+    "- Output ONLY the corrected JSON object — no markdown fences, "
+    "no explanatory text."
+)
+
+
 def _strip_markdown_fences(text: str) -> str:
     """Remove ```json ... ``` fences if present."""
     text = text.strip()
@@ -207,18 +219,25 @@ def parse_judge_response(raw_response: str) -> dict[str, Any]:
         if not isinstance(dim_data, dict):
             raise ValueError(f"scores.{dim} is missing or not a dict")
         score_val = dim_data.get("score")
-        if not isinstance(score_val, (int, float)):
-            raise ValueError(
-                f"scores.{dim}.score must be a number, got {type(score_val).__name__}"
-            )
-        if not (1 <= score_val <= 5):
-            raise ValueError(
-                f"scores.{dim}.score is {score_val}, must be 1–5"
-            )
         applicable = dim_data.get("applicable", True)
         if not isinstance(applicable, bool):
             raise ValueError(
                 f"scores.{dim}.applicable must be bool, got {type(applicable).__name__}"
+            )
+
+        # Null score is allowed only when applicable=false.
+        if score_val is None:
+            if applicable:
+                raise ValueError(
+                    f"scores.{dim}.score is null but applicable=true"
+                )
+        elif not isinstance(score_val, (int, float)):
+            raise ValueError(
+                f"scores.{dim}.score must be a number, got {type(score_val).__name__}"
+            )
+        elif not (1 <= score_val <= 5):
+            raise ValueError(
+                f"scores.{dim}.score is {score_val}, must be 1–5"
             )
         if "reason" not in dim_data:
             raise ValueError(f"scores.{dim} missing 'reason' field")
@@ -671,20 +690,30 @@ def run_batch(
             rule_verdict = "PASS" if _case_passed(rule_result) else "FAIL"
             result_entry["rule_verdict"] = rule_verdict
 
-            # --- judge ----------------------------------------------------
+            # --- judge (with one retry on parse failure) -----------------
             messages = build_judge_messages(case, agent_result, rule_result)
             raw = model.generate_response(messages)
 
             try:
                 judge_result = parse_judge_response(raw)
             except ValueError as exc:
-                result_entry["rule_verdict"] = result_entry.get(
-                    "rule_verdict", "ERROR"
-                )
-                result_entry["judge_verdict"] = "ERROR"
-                result_entry["error"] = f"Judge parse error: {exc}"
-                results.append(result_entry)
-                continue
+                # Retry once with a stricter prompt.
+                retry_content = messages[-1]["content"] + JUDGE_RETRY_SUFFIX
+                retry_messages = list(messages)
+                retry_messages[-1] = {
+                    "role": "user", "content": retry_content,
+                }
+                try:
+                    raw2 = model.generate_response(retry_messages)
+                    judge_result = parse_judge_response(raw2)
+                except ValueError as exc2:
+                    result_entry["rule_verdict"] = result_entry.get(
+                        "rule_verdict", "ERROR"
+                    )
+                    result_entry["judge_verdict"] = "ERROR"
+                    result_entry["error"] = f"Judge parse error after retry: {exc2}"
+                    results.append(result_entry)
+                    continue
 
             verdict = calculate_judge_verdict(judge_result)
             result_entry["judge_verdict"] = verdict.verdict
@@ -801,9 +830,17 @@ def run_single_case(
     try:
         judge_result = parse_judge_response(raw)
     except ValueError as exc:
-        print(f"ERROR: Failed to parse judge response: {exc}")
-        print(f"Raw response was:\n{raw[:500]}")
-        sys.exit(1)
+        # Retry once.
+        retry_content = messages[-1]["content"] + JUDGE_RETRY_SUFFIX
+        retry_messages = list(messages)
+        retry_messages[-1] = {"role": "user", "content": retry_content}
+        try:
+            raw2 = model.generate_response(retry_messages)
+            judge_result = parse_judge_response(raw2)
+        except ValueError as exc2:
+            print(f"ERROR: Failed to parse judge response after retry: {exc2}")
+            print(f"Raw response was:\n{raw[:500]}")
+            sys.exit(1)
 
     verdict = calculate_judge_verdict(judge_result)
 

@@ -766,3 +766,40 @@ def test_rule_verdict_matches_spy_model_execution():
     assert result.tool_pass is True
     # With no behaviors, _case_passed falls back to tool_pass.
     assert _case_passed(result) is True
+
+
+# =========================================================================
+# Nullable score handling
+# =========================================================================
+
+
+class TestNullableScores:
+    """Verify parse_judge_response handles null scores correctly."""
+
+    def _json_with_null_score(self, dim="uncertainty_handling",
+                              applicable=False):
+        data = json.loads(_valid_judge_json())
+        data["scores"][dim] = {"score": None, "applicable": applicable,
+                               "reason": "No uncertain data."}
+        return json.dumps(data)
+
+    def test_accepts_null_score_when_applicable_false(self):
+        raw = self._json_with_null_score(applicable=False)
+        result = parse_judge_response(raw)
+        assert result["scores"]["uncertainty_handling"]["score"] is None
+        assert result["scores"]["uncertainty_handling"]["applicable"] is False
+
+    def test_rejects_null_score_when_applicable_true(self):
+        raw = self._json_with_null_score(applicable=True)
+        with pytest.raises(ValueError, match="null but applicable=true"):
+            parse_judge_response(raw)
+
+
+class TestJudgeRetry:
+    """Verify the retry prompt is structured correctly."""
+
+    def test_retry_prompt_exists(self):
+        from eval.run_llm_judge import JUDGE_RETRY_SUFFIX
+        assert "numeric score" in JUDGE_RETRY_SUFFIX.lower()
+        assert "applicable=false" in JUDGE_RETRY_SUFFIX
+        assert "score=null" in JUDGE_RETRY_SUFFIX

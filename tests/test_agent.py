@@ -1860,6 +1860,140 @@ class TestClarifyLoop:
 # =========================================================================
 
 
+# =========================================================================
+# Clarify for missing completed courses — prompt guidance
+# =========================================================================
+
+
+class TestClarifyMissingCoursesPrompt:
+    """Verify prompt contains clarify-for-missing-courses guidance."""
+
+    @staticmethod
+    def _get_system_prompt(agent: CoursePlanningAgent, request: str) -> str:
+        spy = _SpyModel()
+        agent.model = spy
+        agent._reason_about_request(request)
+        for msg in spy.last_messages:
+            if msg["role"] == "system":
+                return msg["content"]
+        return ""
+
+    def test_rule_10_forbids_empty_completed_courses(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "Can I take CSC311H1?")
+        lowered = prompt.lower()
+        assert "do not call check_prerequisites" in lowered.lower() or \
+               "not call check_prerequisites" in lowered
+        assert "empty" in lowered or "invented" in lowered
+
+    def test_prompt_has_eligibility_clarify_example(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "Am I eligible?")
+        assert "Am I eligible for CSC311H1" in prompt
+        assert '"action": "clarify"' in prompt
+
+    def test_normal_prereq_check_still_works(self):
+        """When completed_courses ARE provided, check_prerequisites is used."""
+        agent = CoursePlanningAgent(
+            completed_courses=["CSC148H1"],
+            model=_SequenceModel([
+                '{"tool_name": "check_prerequisites", '
+                '"arguments": {"course_code": "CSC384H1", '
+                '"completed_courses": ["CSC148H1"]}}',
+                "Final answer.",
+            ]),
+        )
+        result = agent.handle_request(
+            "Can I take CSC384H1? I completed CSC148H1.",
+            max_tool_steps=1,
+        )
+        assert result["tool_called"] == "check_prerequisites"
+        assert result["stop_reason"] == "max_steps"
+
+
+# =========================================================================
+# Multi-step + grounding regression tests
+# =========================================================================
+
+
+class TestMultiStepGrounding:
+    """Verify prompt rules for multi-step completeness and grounding."""
+
+    @staticmethod
+    def _get_system_prompt(agent: CoursePlanningAgent, request: str) -> str:
+        spy = _SpyModel()
+        agent.model = spy
+        agent._reason_about_request(request)
+        for msg in spy.last_messages:
+            if msg["role"] == "system":
+                return msg["content"]
+        return ""
+
+    @staticmethod
+    def _get_answer_prompt(agent: CoursePlanningAgent) -> str:
+        """Get the answer-generation system prompt."""
+        agent.handle_request("Q?", max_tool_steps=1)
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                return m["content"]
+        return ""
+
+    # A. Both prerequisites + term must be checked.
+
+    def test_prompt_requires_both_prereq_and_term(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "Can I take CSC384H1 in Winter?")
+        lowered = prompt.lower()
+        assert "check_prerequisites" in lowered
+        assert "check_term_availability" in lowered
+        assert "do not skip" in lowered
+
+    def test_prompt_says_check_term_even_if_not_eligible(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "Can I take CSC384H1 in Winter?")
+        lowered = prompt.lower()
+        assert "even if prerequisites are not met" in lowered
+        assert "still check term" in lowered.lower()
+
+    # B. Don't say term is irrelevant.
+
+    def test_answer_prompt_forbids_term_irrelevant(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "check_prerequisites", '
+                '"arguments": {"course_code": "CSC384H1", '
+                '"completed_courses": ["CSC148H1"]}}',
+                "Not eligible.",
+            ]),
+        )
+        prompt = self._get_answer_prompt(agent)
+        lowered = prompt.lower()
+        assert "never say it is irrelevant" in lowered
+
+    # C. Don't invent prerequisite course codes.
+
+    def test_answer_prompt_forbids_inventing_prereq_codes(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "recommend_courses_for_requirement", '
+                '"arguments": {"requirement_tag": "pool", '
+                '"completed_courses": []}}',
+                "Recommendations.",
+            ]),
+        )
+        prompt = self._get_answer_prompt(agent)
+        lowered = prompt.lower()
+        assert "never name specific prerequisite course codes" in lowered
+        assert "those codes appear" in lowered
+
+    def test_reasoning_prompt_forbids_inventing_prereq_codes(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "What AI courses?")
+        lowered = prompt.lower()
+        assert "never invent specific prerequisite" in lowered
+        assert "those course codes appear" in lowered
+
+
 class TestDiagnosticFields:
     """Verify last_model_response and parse_error in handle_request result."""
 

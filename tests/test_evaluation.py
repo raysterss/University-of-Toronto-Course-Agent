@@ -1441,3 +1441,340 @@ def test_evaluate_case_backward_compatibility():
     assert isinstance(result, EvalResult)
     # MockModel returns "Mock model response" → no parseable JSON → no tool.
     assert result.tool_pass is True  # empty expected_tools
+
+
+# =========================================================================
+# completed_courses, interests, prerequisite_status behavior checks
+# =========================================================================
+
+
+def test_completed_courses_arg_check_passes():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": "recommend_courses_for_requirement",
+        "observation": "...",
+        "steps": [{
+            "thought": "...",
+            "tool_called": "recommend_courses_for_requirement",
+            "arguments": {
+                "requirement_tag": "computational_cognition_stream_pool",
+                "completed_courses": ["CSC108H1", "CSC148H1", "STA237H1"],
+            },
+            "observation": "Found 65 courses...",
+        }],
+        "final_answer": "Consider CSC311H1 and CSC384H1.",
+    })
+    passed, ev = _check_one_behavior(
+        "Passes the student's completed_courses for prerequisite checks.",
+        signals,
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_completed_courses_arg_check_fails():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": "recommend_courses_for_requirement",
+        "observation": "...",
+        "steps": [{
+            "thought": "...",
+            "tool_called": "recommend_courses_for_requirement",
+            "arguments": {"requirement_tag": "pool"},
+            "observation": "...",
+        }],
+        "final_answer": "Some courses.",
+    })
+    passed, ev = _check_one_behavior(
+        "Passes the student's completed_courses for prerequisite checks.",
+        signals,
+    )
+    assert passed is False, f"Expected FAIL, got: {ev}"
+
+
+def test_interests_arg_check_passes_ai():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": "recommend_courses_for_requirement",
+        "observation": "...",
+        "steps": [{
+            "thought": "...",
+            "tool_called": "recommend_courses_for_requirement",
+            "arguments": {
+                "requirement_tag": "pool",
+                "completed_courses": [],
+                "interests": ["AI", "machine learning"],
+            },
+            "observation": "...",
+        }],
+        "final_answer": "...",
+    })
+    passed, ev = _check_one_behavior(
+        "Passes interests=['AI', 'machine learning'] or similar to rank AI/ML courses first.",
+        signals,
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_interests_arg_check_fails():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": "recommend_courses_for_requirement",
+        "observation": "...",
+        "steps": [{
+            "thought": "...",
+            "tool_called": "recommend_courses_for_requirement",
+            "arguments": {"requirement_tag": "pool", "completed_courses": []},
+            "observation": "...",
+        }],
+        "final_answer": "...",
+    })
+    passed, ev = _check_one_behavior(
+        "Passes interests=['AI', 'machine learning'] or similar.",
+        signals,
+    )
+    assert passed is False, f"Expected FAIL, got: {ev}"
+
+
+def test_prerequisite_status_mention_passes():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": "recommend_courses_for_requirement",
+        "observation": "...",
+        "final_answer": "CSC311H1 requires prerequisite check. CSC384H1 is manual_review_needed.",
+    })
+    passed, ev = _check_one_behavior(
+        "Notes prerequisite_status for the courses explicitly recommended in the final answer.",
+        signals,
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_prerequisite_status_mention_fails():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": "recommend_courses_for_requirement",
+        "observation": "...",
+        "final_answer": "Here are some AI courses: CSC311H1, CSC384H1.",
+    })
+    passed, ev = _check_one_behavior(
+        "Notes prerequisite_status for the courses explicitly recommended in the final answer.",
+        signals,
+    )
+    assert passed is False, f"Expected FAIL, got: {ev}"
+
+
+# =========================================================================
+# advising + credit implication behavior check
+# =========================================================================
+
+
+def test_advising_credit_check_passes():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": "check_exclusions",
+        "observation": "...",
+        "final_answer": "Check with academic advising about credit implications.",
+    })
+    passed, ev = _check_one_behavior(
+        "Advises checking with academic advising about credit implications.",
+        signals,
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_advising_exclusion_check_passes():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": "check_exclusions",
+        "observation": "...",
+        "final_answer": "Ask an advisor how this exclusion affects program counting.",
+    })
+    passed, ev = _check_one_behavior(
+        "Advises checking with academic advising about credit implications.",
+        signals,
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_advising_check_fails_generic_verification():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": "check_exclusions",
+        "observation": "...",
+        "final_answer": "Verify with official sources.",
+    })
+    passed, ev = _check_one_behavior(
+        "Advises checking with academic advising about credit implications.",
+        signals,
+    )
+    assert passed is False, f"Expected FAIL, got: {ev}"
+
+
+def test_advising_check_fails_credit_only():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": "check_exclusions",
+        "observation": "...",
+        "final_answer": "This may affect credit.",
+    })
+    passed, ev = _check_one_behavior(
+        "Advises checking with academic advising about credit implications.",
+        signals,
+    )
+    assert passed is False, f"Expected FAIL, got: {ev}"
+
+
+# =========================================================================
+# clarification behavior checks
+# =========================================================================
+
+
+def test_completed_courses_clarification_passes():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": None,
+        "observation": "Clarification required.",
+        "final_answer": "Which courses have you completed so far?",
+    })
+    passed, ev = _check_one_behavior(
+        "Asks specifically about completed courses, which are needed for eligibility.",
+        signals,
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_completed_courses_clarification_fails():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": None,
+        "observation": "Clarification required.",
+        "final_answer": "What is your target term?",
+    })
+    passed, ev = _check_one_behavior(
+        "Asks specifically about completed courses, which are needed for eligibility.",
+        signals,
+    )
+    assert passed is False, f"Expected FAIL, got: {ev}"
+
+
+def test_no_tool_no_determination_passes():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": None,
+        "observation": "Clarification required.",
+        "steps": [],
+        "final_answer": "Please tell me which courses you have completed so I can check eligibility.",
+    })
+    passed, ev = _check_one_behavior(
+        "Does not call any tool or make an eligibility determination.",
+        signals,
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_no_tool_no_determination_fails_with_claim():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": "check_prerequisites",
+        "observation": "...",
+        "steps": [{"thought": "...", "tool_called": "check_prerequisites",
+                    "arguments": {}, "observation": "eligible."}],
+        "final_answer": "You are eligible to take CSC311H1.",
+    })
+    passed, ev = _check_one_behavior(
+        "Does not call any tool or make an eligibility determination.",
+        signals,
+    )
+    assert passed is False, f"Expected FAIL, got: {ev}"
+
+
+def test_specific_clarification_passes():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": None,
+        "observation": "Clarification required.",
+        "final_answer": "Which courses have you completed so far?",
+    })
+    passed, ev = _check_one_behavior(
+        "Makes the clarification question specific and actionable.",
+        signals,
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_specific_clarification_fails_not_a_question():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": None,
+        "observation": "Clarification required.",
+        "final_answer": "I need more information.",
+    })
+    passed, ev = _check_one_behavior(
+        "Makes the clarification question specific and actionable.",
+        signals,
+    )
+    assert passed is False, f"Expected FAIL, got: {ev}"
+
+
+def test_no_course_advice_before_info_passes():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": None,
+        "observation": "Clarification required.",
+        "final_answer": "What courses have you completed? CSC311H1 requires prerequisites.",
+    })
+    passed, ev = _check_one_behavior(
+        "Does not provide course advice before receiving the missing information.",
+        signals,
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_no_course_advice_before_info_fails_with_recommendation():
+    from eval.run_evaluation import _check_one_behavior
+
+    signals = extract_signals({
+        "thought": "...",
+        "tool_called": None,
+        "observation": "Clarification required.",
+        "final_answer": "I recommend taking CSC311H1. What courses have you completed?",
+    })
+    passed, ev = _check_one_behavior(
+        "Does not provide course advice before receiving the missing information.",
+        signals,
+    )
+    assert passed is False, f"Expected FAIL, got: {ev}"

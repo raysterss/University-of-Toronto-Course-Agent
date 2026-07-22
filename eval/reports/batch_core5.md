@@ -1,9 +1,9 @@
 # Core-5 Batch Evaluation Report
 
-**Batch:** `core5`  
-**Generated:** 2026-07-16 05:15 UTC  
-**Judge model:** deepseek-v4-flash-202605  
-**Cases:** 5  
+**Batch:** `core5`
+**Generated:** 2026-07-21 09:09 UTC
+**Judge model:** deepseek-v4-flash-202605
+**Cases:** 5
 
 ## Summary
 
@@ -17,19 +17,19 @@
 
 | case_id | category | tools | rule | judge | score | risk | issues |
 |---------|----------|-------|------|-------|-------|------|--------|
-| multistep_csc384h1_winter | prerequisite_reasoning | check_prerequisites → check_term_availability | PASS | PASS | 4.8 | none | 0 |
-| recommend_ai_ml | course_recommendation | recommend_courses_for_requirement | PASS | PASS | 4.6 | low | 2 |
-| exclusion_csc108_csc148 | exclusion_conflicts | check_exclusions | PASS | PASS | 4.5 | low | 1 |
-| verify_mat137_unverified | verification_uncertainty | get_course_metadata_status → recommend_courses_for_requirement | PASS | PASS | 4.8 | low | 1 |
-| insufficient_no_completed | insufficient_information | check_prerequisites | PASS | PASS | 4.0 | none | 2 |
+| multistep_csc384h1_winter | prerequisite_reasoning | check_prerequisites → check_term_availability | PASS | PASS | 5.0 | none | 0 |
+| recommend_ai_ml | course_recommendation | recommend_courses_for_requirement | PASS | PASS | 4.8 | low | 1 |
+| exclusion_csc108_csc148 | exclusion_conflicts | check_exclusions → get_course_details | PASS | PASS | 4.8 | none | 0 |
+| verify_mat137_unverified | verification_uncertainty | get_course_metadata_status → recommend_courses_for_requirement | PASS | PASS | 5.0 | none | 0 |
+| insufficient_no_completed | insufficient_information | (none) | PASS | PASS | 5.0 | none | 0 |
 
 ## Per-Case Reports
 
 # LLM Judge Evaluation Report
 
-**Generated:** 2026-07-16 05:11 UTC  
-**Judge model:** deepseek-v4-flash-202605  
-**Case:** `multistep_csc384h1_winter`  
+**Generated:** 2026-07-21 09:07 UTC
+**Judge model:** deepseek-v4-flash-202605
+**Case:** `multistep_csc384h1_winter`
 
 ## User Query
 
@@ -47,7 +47,12 @@ Tool 'check_term_availability' returned: {'course_code': 'CSC384H1', 'course_fou
 
 ## Final Answer
 
-> Based on the prerequisite check, you are **not eligible** to take CSC384H1 with only CSC148H1 and STA237H1 completed. The deterministic prerequisite check returned **not_eligible**. The course is available in Winter according to term availability, but eligibility is the determining factor.
+> Based on the results:
+
+- **Prerequisite check**: The deterministic prerequisite check returned **not eligible** for CSC384H1 with CSC148H1 and STA237H1 as completed courses. This means you do not meet the prerequisites for CSC384H1.
+- **Term availability**: CSC384H1 is listed as **available** in the Winter term.
+
+Since the prerequisite requirement is not satisfied, you would not be able to take CSC384H1 in Winter. The term availability does not override the prerequisite eligibility. You may need to complete additional prerequisite courses before enrolling.
 
 ## Rule-Based Evaluation
 
@@ -56,26 +61,26 @@ Tool 'check_term_availability' returned: {'course_code': 'CSC384H1', 'course_fou
 
 ## LLM Judge Assessment
 
-**Verdict:** ✅ PASS  
-**Overall score:** 4.8/5  
+**Verdict:** ✅ PASS
+**Overall score:** 5.0/5
 
 | Dimension | Score | Applicable | Reason |
 |-----------|-------|------------|--------|
-| groundedness | 5/5 | ✅ | Every claim in the answer directly traces to the tool observations: the prerequisite check result 'not_eligible' and the |
-| correctness | 5/5 | ✅ | The answer correctly interprets the 'not_eligible' status and correctly states that the course is available in Winter. I |
-| helpfulness | 4/5 | ✅ | The answer directly addresses whether the student can take CSC384H1 in Winter and explains that they are not eligible. I |
-| clarity | 5/5 | ✅ | The answer is well-structured, uses plain language, and clearly distinguishes between eligibility and availability. The  |
-| uncertainty_handling | 3/5 | — | No uncertain observations (UNKNOWN, manual_review_needed, etc.) are present, so this dimension is not applicable. |
+| groundedness | 5/5 | ✅ | All factual claims in the answer directly trace to tool observations: not_eligible for prerequisites and available for t |
+| correctness | 5/5 | ✅ | Correctly infers that not_eligible means the student cannot enroll despite term availability, which is logically sound. |
+| helpfulness | 5/5 | ✅ | Directly answers the student's question, explains the distinction between term availability and eligibility, and suggest |
+| clarity | 5/5 | ✅ | Answer is well-structured with bullet points, uses plain language, and clearly separates prerequisite and availability i |
+| uncertainty_handling | 1/5 | — | No uncertain observations (no UNKNOWN, manual_review_needed, or verification warnings) were present in the tool outputs, |
 
 ### Strengths
 
-- Accurately reports the prerequisite check outcome without overstating.
-- Correctly separates the concept of course availability from student eligibility.
-- Directly answers the user's question with clear language.
+- Accurately distinguishes course availability from student eligibility
+- Clear and concise explanation
+- Correctly identifies the limiting factor (prerequisites not met)
 
 **Hallucination risk:** none
 
-**Summary:** The agent's answer is fully grounded in the observations, correct, clear, and helpful. It meets all expected behaviors, including distinguishing availability from eligibility. No hallucination or overclaim is present.
+**Summary:** The agent answer is fully grounded in the observations, correctly interprets the tool statuses, and provides a clear, helpful response to the student. There are no errors or uncertainties.
 
 ---
 
@@ -84,9 +89,9 @@ Tool 'check_term_availability' returned: {'course_code': 'CSC384H1', 'course_fou
 
 # LLM Judge Evaluation Report
 
-**Generated:** 2026-07-16 05:12 UTC  
-**Judge model:** deepseek-v4-flash-202605  
-**Case:** `recommend_ai_ml`  
+**Generated:** 2026-07-21 09:08 UTC
+**Judge model:** deepseek-v4-flash-202605
+**Case:** `recommend_ai_ml`
 
 ## User Query
 
@@ -153,93 +158,62 @@ Preview (10 of 65):
 
 ## Final Answer
 
-> Based on the retrieved data from the **Computational Cognition Stream** course pool, several AI and machine learning courses appear as options. Here is a summary of what to consider, with evidence from the tool results:
+> Based on the retrieved pool of courses for the **Computational Cognition Stream** (65 options), several courses match your interest in **AI and machine learning**. Here are notable examples from the preview:
 
-### Courses Matching Your Interests (AI, Machine Learning)
+| Course | Interest Match | Terms | Prerequisite Status | Verification |
+|--------|----------------|-------|---------------------|--------------|
+| CSC311H1 – Introduction to Machine Learning | AI, ML | Fall | not_eligible | calendar_verified |
+| CSC384H1 – Introduction to Artificial Intelligence | AI | Winter | not_eligible | calendar_verified |
+| CSC413H1 – Neural Networks and Deep Learning | AI, ML | UNKNOWN | manual_review_needed | calendar_verified |
+| CSC412H1 – Probabilistic Learning and Reasoning | AI, ML | UNKNOWN | manual_review_needed | calendar_verified |
+| CSC401H1 – Natural Language Computing | AI | UNKNOWN | manual_review_needed | calendar_verified |
+| CSC420H1 – Introduction to Image Understanding | AI | UNKNOWN | manual_review_needed | calendar_verified |
+| CSC486H1 – Knowledge Representation and Reasoning | AI | UNKNOWN | manual_review_needed | calendar_verified |
+| CSB334H1 – Methods and Analysis in Behavioral Neuroscience | ML | UNKNOWN | manual_review_needed | calendar_verified |
+| PSY371H1 – Higher Cognitive Processes | AI | UNKNOWN | not_eligible | calendar_verified |
 
-- **CSC311H1 – Introduction to Machine Learning**  
-  - Listed as an option in the retrieved *computational_cognition_stream_pool*.  
-  - **Verification**: calendar_verified  
-  - **Term**: Fall (known)  
-  - **Prerequisite eligibility**: not_eligible (deterministic prerequisite check)  
-- **CSC384H1 – Introduction to Artificial Intelligence**  
-  - Listed as an option in the retrieved *computational_cognition_stream_pool*.  
-  - **Verification**: calendar_verified  
-  - **Term**: Winter (known)  
-  - **Prerequisite eligibility**: not_eligible (deterministic prerequisite check)  
+**Key observations:**
+- CSC311H1 and CSC384H1 have known terms but **not_eligible** prerequisites given your completed courses (CSC108H1, CSC148H1, STA237H1).
+- Most other interest-matching courses have **UNKNOWN** term availability and require **manual review** of prerequisites.
+- All listed courses are **calendar_verified** for metadata.
 
-Both of these courses have known term offerings and calendar-verified metadata, but the deterministic prerequisite check indicates you do **not** currently meet the prerequisites. You should verify your completed courses against the official prerequisite statements.
-
-### Courses with Verification or Availability Uncertainty
-
-Several other AI/ML-related courses appear in the pool but have **UNKNOWN term availability** and **manual_review_needed** for their prerequisites. The metadata is calendar_verified, but the term and prerequisite details require manual confirmation:
-
-- CSC401H1, CSC412H1, CSC413H1, CSC420H1, CSC486H1 (all 400-level, UNKNOWN terms)
-- CSB334H1 (300-level, UNKNOWN term)
-- PSY371H1 (300-level, UNKNOWN term, prerequisites not_eligible)
-
-For these, the retrieved data says: *metadata is calendar_verified, but term availability is UNKNOWN and the prerequisite checker returned manual_review_needed. That does not resolve the separate official-verification warning for term or prerequisite eligibility.* You will need to consult the department or official timetable to confirm when they run and your prerequisite standing.
-
-### Other Options in the Same Stream
-
-If you prefer courses with already known term information and calendar verification, the two courses above (CSC311H1, CSC384H1) are the clearest matches, but their prerequisite barrier is a limitation. Other options listed in the retrieved *computational_cognition_stream_pool* that also match your interests include:
-
-- **CSB334H1** – Methods and Analysis in Behavioral Neuroscience (interest match: machine learning)  
-  *Verification: calendar_verified | Term: UNKNOWN | Prerequisites: manual_review_needed*  
-- **PSY371H1** – Higher Cognitive Processes (interest match: AI)  
-  *Verification: calendar_verified | Term: UNKNOWN | Prerequisites: not_eligible*  
-- **CSC412H1** – Probabilistic Learning and Reasoning (interest match: AI, machine learning)  
-  *Verification: calendar_verified | Term: UNKNOWN | Prerequisites: manual_review_needed*  
-
-These alternatives share the same uncertainties (unknown terms, manual prerequisite checks) but may be worth exploring further.
-
-### Recommended Next Steps
-
-1. **Official Verification**: For any course with *calendar_verified* metadata but *manual_review_needed* or *UNKNOWN* term, contact the department or use official enrollment systems to confirm term offerings and prerequisite eligibility.
-2. **Prerequisite Check**: For CSC311H1 and CSC384H1, review the official prerequisites (e.g., CSC148H1 and/or specific math courses) against your completed courses. The deterministic check returned *not_eligible*, so you may need to complete additional courses first.
-3. **Maintain Flexibility**: Because many courses have UNKNOWN terms, consider having a backup plan from other confirmed offerings in the stream (e.g., CSC311H1 if prerequisites are met, or a different course that becomes available).
-
-All information above is based solely on the retrieved *computational_cognition_stream_pool* data and the deterministic prerequisite checks run on that data. No other sources were used.
+Since many prerequisites and term details are uncertain, I recommend **official verification** before finalizing your course selections. You may also want to explore other stream options with stronger prerequisite fit; the full pool lists 65 courses, including some 100/200-level offerings that might have clearer eligibility.
 
 ## Rule-Based Evaluation
 
 - **Tool usage:** ✅
-- **Behavior pass rate:** 3/7
+- **Behavior pass rate:** 6/6
 
 ## LLM Judge Assessment
 
-**Verdict:** ✅ PASS  
-**Overall score:** 4.6/5  
+**Verdict:** ✅ PASS
+**Overall score:** 4.8/5
 
 | Dimension | Score | Applicable | Reason |
 |-----------|-------|------------|--------|
-| groundedness | 4/5 | ✅ | Most claims trace to observations, but the answer speculates about prerequisites (e.g., CSC148H1 and math courses) not p |
-| correctness | 4/5 | ✅ | Core conclusions (term availability, prerequisite status) are correct, but the answer incorrectly refers to a 'separate  |
-| helpfulness | 5/5 | ✅ | Addresses the student's interest, explains course options, and provides clear actionable steps (verify prerequisites, co |
-| clarity | 5/5 | ✅ | Well-structured with headings, plain-language explanations of tool statuses, and easy-to-follow recommendations. |
-| uncertainty_handling | 5/5 | ✅ | Clearly surfaces UNKNOWN terms, manual_review_needed, and not_eligible statuses, and advises contacting the department f |
+| groundedness | 4/5 | ✅ | Almost all factual claims trace back to observations, but the suggestion that 100/200-level offerings might have clearer |
+| correctness | 5/5 | ✅ | Correctly interprets not_eligible and manual_review_needed statuses, and logically connects them to the student's comple |
+| helpfulness | 5/5 | ✅ | Addresses the student's interest in AI/ML courses, lists relevant options, explains prerequisite and term uncertainties, |
+| clarity | 5/5 | ✅ | Well-structured table and bullet points make the information easy to digest; plain language explanations of statuses. |
+| uncertainty_handling | 5/5 | ✅ | Clearly highlights UNKNOWN terms and manual_review_needed prerequisites, and advises official verification without overc |
 
 ### Strengths
 
-- Correctly identifies AI/ML courses from the pool and their term/prerequisite statuses.
-- Provides clear next steps for verification and backup planning.
-- Plain-language explanations of technical statuses (e.g., not_eligible, manual_review_needed).
+- Correctly identifies AI and machine learning courses from the 65-course pool.
+- Presents information in a clear, easy-to-read table with relevant columns.
+- Highlights prerequisite and term uncertainties and recommends verification.
+- Matches expected behaviors: uses appropriate tool arguments, mentions specific courses, notes prerequisite status, and includes a verification reminder.
 
 ### Issues
 
 **1. [minor] overclaim**
-- Suggests specific prerequisites (CSC148H1 and math courses) not present in the observations.
-- From answer: _review the official prerequisites (e.g., CSC148H1 and/or specific math courses)_
-- From observations: _Prerequisite details are not listed; only statuses (not_eligible, manual_review_needed)._
-
-**2. [minor] overclaim**
-- Claims existence of a 'separate official-verification warning' not supported by observations.
-- From answer: _That does not resolve the separate official-verification warning for term or prerequisite eligibility._
-- From observations: _Observations only show Verification: calendar_verified; no 'warning' label is present._
+- The suggestion that 100/200-level offerings in the full pool 'might have clearer eligibility' is not supported by the observations. The preview only shows one 100-level course (CSC165H1) with manual_review_needed, not clearer eligibility.
+- From answer: _'the full pool lists 65 courses, including some 100/200-level offerings that might have clearer eligibility'_
+- From observations: _The preview includes only one 100-level course (CSC165H1) with prerequisites: manual_review_needed, and no other 200-level courses. There is no indication of clearer eligibility._
 
 **Hallucination risk:** low
 
-**Summary:** The answer is well-structured and correctly uses the observed course data, but includes minor extrapolations about prerequisites and an invented warning label that are not grounded in the observations. Overall helpful and clear.
+**Summary:** The agent answer is largely grounded, correct, and helpful. It successfully identifies AI/ML courses from the Computational Cognition Stream pool, explains prerequisite statuses and term uncertainties, and advises verification. One minor overclaim about 100/200-level offerings having clearer eligibility is not backed by the observations, but overall the answer meets expectations and addresses the student's question effectively.
 
 ---
 
@@ -248,9 +222,9 @@ All information above is based solely on the retrieved *computational_cognition_
 
 # LLM Judge Evaluation Report
 
-**Generated:** 2026-07-16 05:13 UTC  
-**Judge model:** deepseek-v4-flash-202605  
-**Case:** `exclusion_csc108_csc148`  
+**Generated:** 2026-07-21 09:08 UTC
+**Judge model:** deepseek-v4-flash-202605
+**Case:** `exclusion_csc108_csc148`
 
 ## User Query
 
@@ -258,48 +232,49 @@ All information above is based solely on the retrieved *computational_cognition_
 
 ## Tools Called
 
-**Step 1:** `check_exclusions` — `{"course_code": "CSC108H1", "completed_courses": ["CSC108H1"]}`
+**Step 1:** `check_exclusions` — `{"course_code": "CSC108H1", "completed_courses": ["CSC108H1", "CSC148H1"]}`
 
-No exclusion conflicts for CSC108H1. No completed courses match the listed exclusions.
+Exclusion conflict found for CSC108H1: CSC148H1. CSC108H1 lists completed course(s) as exclusions. Credit or program-counting may be affected; verify with the official Academic Calendar or academic advising.
+
+**Step 2:** `get_course_details` — `{"course_code": "CSC108H1"}`
+
+Found course: Introduction to Computer Programming (CSC108H1).
 
 ## Final Answer
 
-> Based on the check_exclusions result, there are no exclusion conflicts for CSC108H1 when retaking it after already having completed it. The tool reported that no completed courses match the listed exclusions, so retaking is not blocked by exclusion rules. Note that this only addresses exclusion restrictions; other factors such as term availability or enrollment limits are not covered by this check.
+> Based on the available information, the current tools cannot determine whether you are permitted to retake CSC108H1 for grade improvement. No retake policy is included in the observations.
+
+The exclusion check (tool: check_exclusions) reports that CSC108H1 lists CSC148H1 as an exclusion.  Since you have already completed CSC108H1, this exclusion is relevant to CSC148H1, not to a retake of CSC108H1 itself.  However, the report notes that "credit or program-counting may be affected" and advises verification with the official Academic Calendar or academic advising.
+
+To get a definitive answer about retaking CSC108H1, you should consult the official U of T Academic Calendar or contact academic advising.
 
 ## Rule-Based Evaluation
 
 - **Tool usage:** ✅
-- **Behavior pass rate:** 2/4
+- **Behavior pass rate:** 4/4
 
 ## LLM Judge Assessment
 
-**Verdict:** ✅ PASS  
-**Overall score:** 4.5/5  
+**Verdict:** ✅ PASS
+**Overall score:** 4.8/5
 
 | Dimension | Score | Applicable | Reason |
 |-----------|-------|------------|--------|
-| groundedness | 5/5 | ✅ | Every factual claim in the answer (no exclusion conflicts, report from tool) directly matches the tool observation. No i |
-| correctness | 5/5 | ✅ | Given the observation that no completed courses match exclusions, the conclusion that retaking is not blocked by exclusi |
-| helpfulness | 3/5 | ✅ | The answer addresses the student's question about exclusions but does not mention the potential overlap with CSC148H1 (w |
-| clarity | 5/5 | ✅ | The answer is structured clearly, uses plain language, and explains the scope of the check. |
-| uncertainty_handling | 5/5 | — | No uncertain data in the observations; the answer appropriately notes limitations but does not misrepresent certainty. |
+| groundedness | 5/5 | ✅ | Every factual claim in the answer traces back to the tool observations: the exclusion conflict between CSC108H1 and CSC1 |
+| correctness | 5/5 | ✅ | The answer correctly interprets that the exclusion does not directly address retaking CSC108H1, and correctly concludes  |
+| helpfulness | 4/5 | ✅ | The answer directly addresses the student's question by stating that the tools cannot determine the retake policy, and p |
+| clarity | 5/5 | ✅ | The answer is well-structured, uses plain language, and clearly separates what the tools show, the limitations, and the  |
+| uncertainty_handling | 5/5 | ✅ | The answer appropriately surfaces the uncertainty from the tool observation (the need for verification with official sou |
 
 ### Strengths
 
-- Answer is directly grounded in the provided observation.
-- Clearly states the scope of the exclusion check and acknowledges other factors not covered.
-- Concise and easy to follow.
+- All claims are grounded in the provided tool observations.
+- Correctly identifies that the exclusion is about CSC148H1, not directly about retaking CSC108H1.
+- Honest about tool limitations and advises official verification.
 
-### Issues
+**Hallucination risk:** none
 
-**1. [major] omission**
-- The agent called check_exclusions with only CSC108H1 in completed_courses, omitting CSC148H1 which the student also completed. This led to an incomplete observation and an answer that does not address the exclusion between CSC108H1 and CSC148H1, a key concern for a student with both courses.
-- From answer: _"The tool reported that no completed courses match the listed exclusions"_
-- From observations: _The tool call arguments show completed_courses: ["CSC108H1"] (missing CSC148H1). The resulting observation only reflects that incomplete input._
-
-**Hallucination risk:** low
-
-**Summary:** The answer is factually consistent with the (incomplete) observation but fails to address the full student context due to a missing course in the tool call. Groundedness and correctness relative to the observation are high, but helpfulness is reduced by the omission, and clarity is good.
+**Summary:** The agent answer is fully grounded, logically sound, clear, and properly handles uncertainty. It directly addresses the student's question and provides appropriate guidance to official sources. No hallucinations or overclaims are present.
 
 ---
 
@@ -308,9 +283,9 @@ No exclusion conflicts for CSC108H1. No completed courses match the listed exclu
 
 # LLM Judge Evaluation Report
 
-**Generated:** 2026-07-16 05:14 UTC  
-**Judge model:** deepseek-v4-flash-202605  
-**Case:** `verify_mat137_unverified`  
+**Generated:** 2026-07-21 09:09 UTC
+**Judge model:** deepseek-v4-flash-202605
+**Case:** `verify_mat137_unverified`
 
 ## User Query
 
@@ -376,56 +351,51 @@ Preview (9 of 9):
 
 ## Final Answer
 
-> Based on the available data, MAT137Y1 appears in the retrieved **first_year_math_pathway**, but it carries uncertainties that prevent a straightforward recommendation.
+> Based on the available information, here is the assessment for MAT137Y1 regarding the math requirement in the Cognitive Science Computational Cognition stream (which appears to use the general first-year math pathway):
 
-- **Metadata verification** (from `get_course_metadata_status`): MAT137Y1 is marked `needs_official_verification` and `manual review needed`. Its course metadata is not fully calendar‑verified, and term availability is **UNKNOWN**.
-- **Prerequisite eligibility** (from `check_prerequisites`): returned **eligible**. However, this does not resolve the separate official‑verification warning on the metadata.
-- **Term availability** (from `check_term_availability`): **UNKNOWN**.
+- **MAT137Y1 is listed as an option** in the retrieved `first_year_math_pathway` data.
+- **Metadata status**: It is marked `needs_official_verification` and `manual review needed`. Its term availability is **UNKNOWN**.
+- **Prerequisite eligibility**: The deterministic prerequisite check returned `eligible`, but **this does not resolve the separate official-verification warning** on the course metadata. The course has not been fully calendar-verified.
 
-Because the course’s official status and term offering are uncertain, you should seek official verification from the department before counting MAT137Y1 toward the math requirement.
+**Because the official status of MAT137Y1 is uncertain and its term availability is unknown, a definite recommendation cannot be made without further verification.**
 
-Other options listed in the retrieved **first_year_math_pathway** that have `calendar_verified` status and known term information include:
+**Alternatives from the same pathway** (with stronger verification and known term availability):
+- **MAT135H1** – *Calculus I* (calendar_verified, terms Fall/Winter, prerequisites manual_review_needed)
+- **MAT136H1** – *Calculus II* (calendar_verified, terms Fall/Winter, prerequisites manual_review_needed)
 
-- **MAT135H1** – Calculus I (Fall, Winter; prerequisite check: `manual_review_needed`)
-- **MAT136H1** – Calculus II (Fall, Winter; prerequisite check: `manual_review_needed`)
+These are listed in the retrieved pathway data, but you should still verify their prerequisite eligibility and official calendar status before enrolling.
 
-These two courses have stronger verification status and known term availability, though you should still confirm prerequisites with an advisor. No more than three alternatives are cited; official verification of any course’s eligibility for your program is recommended before making a final decision.
+**Important**: This audit is not an official Degree Explorer result. Official verification from the university's calendar or your program advisor is strongly recommended before making a final decision.
 
 ## Rule-Based Evaluation
 
 - **Tool usage:** ✅
-- **Behavior pass rate:** 6/7
+- **Behavior pass rate:** 7/7
 
 ## LLM Judge Assessment
 
-**Verdict:** ✅ PASS  
-**Overall score:** 4.8/5  
+**Verdict:** ✅ PASS
+**Overall score:** 5.0/5
 
 | Dimension | Score | Applicable | Reason |
 |-----------|-------|------------|--------|
-| groundedness | 4/5 | ✅ | The factual claims about MAT137Y1's metadata status, prerequisite eligibility, and term availability are all present in  |
-| correctness | 5/5 | ✅ | The conclusions are logically sound based on the observations. The answer correctly interprets the needs_official_verifi |
-| helpfulness | 5/5 | ✅ | The answer directly addresses the student's question, explains the uncertainties around MAT137Y1, and provides actionabl |
-| clarity | 5/5 | ✅ | The answer is well-structured, uses plain language to explain technical statuses, and clearly separates the status of MA |
-| uncertainty_handling | 5/5 | ✅ | The answer surfaces the needs_official_verification, manual_review_needed, and UNKNOWN term availability without overcon |
+| groundedness | 5/5 | ✅ | All factual claims in the answer trace back to the provided tool observations. No invented prerequisites, course names,  |
+| correctness | 5/5 | ✅ | The conclusion that MAT137Y1 cannot be definitively recommended due to needs_official_verification and unknown terms is  |
+| helpfulness | 5/5 | ✅ | Directly addresses the question, advises against relying on the uncertain status, provides concrete alternative courses, |
+| clarity | 5/5 | ✅ | Answer is well-structured, uses bullet points, explains technical statuses in plain language, and is easy to follow. |
+| uncertainty_handling | 5/5 | ✅ | Clearly surfaces needs_official_verification, manual review needed, and UNKNOWN terms. Does not overclaim; includes a st |
 
 ### Strengths
 
-- Correctly identifies and explains uncertainties in MAT137Y1's status.
-- Provides specific alternative courses (MAT135H1, MAT136H1) with known term availability and calendar verification.
-- Advises official verification, aligning with the needs_official_verification status.
-- Uses clear, structured language that is easy for a student to understand.
+- Grounded entirely in observations
+- Correct interpretation of uncertain statuses
+- Helpful alternatives provided
+- Clear and well-organized structure
+- Excellent handling of uncertainty with appropriate caveats
 
-### Issues
+**Hallucination risk:** none
 
-**1. [minor] hallucination**
-- The answer invents tool calls 'check_prerequisites' and 'check_term_availability' that were not executed. The prerequisite eligibility and term UNKNOWN status are correctly drawn from the recommend_courses_for_requirement observation, but attributing them to separate tool calls is inaccurate.
-- From answer: _Prerequisite eligibility (from `check_prerequisites`): returned **eligible**. ... Term availability (from `check_term_availability`): **UNKNOWN**._
-- From observations: _The only observations are get_course_metadata_status and recommend_courses_for_requirement. Neither observation includes a 'check_prerequisites' or 'check_term_availability' call. The prerequisite info ('Prerequisites: eligible') and term info ('Terms: UNKNOWN') are part of the recommend_courses_for_requirement output._
-
-**Hallucination risk:** low
-
-**Summary:** The agent answers the student's question correctly, surfacing uncertainties and providing alternatives. The only flaw is a minor inaccuracy in attributing some facts to nonexistent tool calls, but this does not affect the factual correctness or helpfulness of the response.
+**Summary:** The agent answer is fully aligned with the tool observations, correctly interprets uncertain statuses, provides helpful alternatives, and communicates clearly. No hallucinations or overclaims are present.
 
 ---
 
@@ -434,9 +404,9 @@ These two courses have stronger verification status and known term availability,
 
 # LLM Judge Evaluation Report
 
-**Generated:** 2026-07-16 05:15 UTC  
-**Judge model:** deepseek-v4-flash-202605  
-**Case:** `insufficient_no_completed`  
+**Generated:** 2026-07-21 09:09 UTC
+**Judge model:** deepseek-v4-flash-202605
+**Case:** `insufficient_no_completed`
 
 ## User Query
 
@@ -444,52 +414,39 @@ These two courses have stronger verification status and known term availability,
 
 ## Tools Called
 
-**Step 1:** `check_prerequisites` — `{"course_code": "CSC311H1", "completed_courses": []}`
-
-Prerequisite check for CSC311H1: not_eligible.
+(no tools called)
 
 ## Final Answer
 
-> Based on the prerequisite check, you are **not eligible** to take CSC311H1.
+> Which courses have you completed? I need your completed courses to check your eligibility for CSC311H1.
 
 ## Rule-Based Evaluation
 
 - **Tool usage:** ✅
-- **Behavior pass rate:** 1/5
+- **Behavior pass rate:** 5/5
 
 ## LLM Judge Assessment
 
-**Verdict:** ✅ PASS  
-**Overall score:** 4.0/5  
+**Verdict:** ✅ PASS
+**Overall score:** 5.0/5
 
 | Dimension | Score | Applicable | Reason |
 |-----------|-------|------------|--------|
-| groundedness | 5/5 | ✅ | The claim 'not eligible' directly matches the tool observation 'not_eligible'. No unsupported claims. |
-| correctness | 5/5 | ✅ | The conclusion that the student is not eligible is exactly what the tool reported, so it is logically sound. |
-| helpfulness | 2/5 | ✅ | The answer answers the question abruptly but does not ask for missing information (completed courses) or provide actiona |
-| clarity | 4/5 | ✅ | The answer is clear and straightforward but could be improved by explaining why the student is not eligible. |
-| uncertainty_handling | 5/5 | — | No uncertain observations present; the tool returned a definitive 'not_eligible'. |
+| groundedness | 5/5 | ✅ | The answer contains no factual claims; it only asks for missing information (completed courses), so it is fully grounded |
+| correctness | 5/5 | ✅ | Given no tool observations, the agent correctly refrains from making an eligibility determination and instead asks for n |
+| helpfulness | 5/5 | ✅ | The answer directly addresses the student's question by requesting the missing information (completed courses) needed to |
+| clarity | 5/5 | ✅ | The answer is concise, specific, and explains why the information is needed, making it easy for the student to understan |
+| uncertainty_handling | 5/5 | ✅ | No uncertain observations are present; the agent appropriately acknowledges it cannot proceed without more information a |
 
 ### Strengths
 
-- Answer is factually grounded in the tool observation.
-- Conclusion directly addresses the student's question.
-
-### Issues
-
-**1. [major] omission**
-- The answer does not explain why the student is not eligible. It fails to mention that the check was done with an empty set of completed courses, so the student does not know what is missing.
-- From answer: _"Based on the prerequisite check, you are **not eligible** to take CSC311H1."_
-- From observations: _The tool was called with completed_courses: [] and returned 'not_eligible'._
-
-**2. [major] omission**
-- The answer does not provide actionable next steps, such as asking for completed courses or suggesting an alternative.
-- From answer: _No further advice or clarification request is present._
-- From observations: _The user query provided no completed courses, and the tool arguments show completed_courses: []._
+- Correctly identifies missing information and asks for it specifically.
+- Does not make unsupported claims or premature eligibility decisions.
+- Clear and actionable request for the student to provide completed courses.
 
 **Hallucination risk:** none
 
-**Summary:** The agent answer is factually correct but lacks helpfulness. It does not ask for the student's missing information or explain the basis of the ineligibility, which are expected for a student who provided no completed courses.
+**Summary:** The agent's clarifying question is fully appropriate given the lack of completed courses data. It meets all expected behaviors: it asks for missing information, does not call any tool or make an eligibility determination, and provides a specific actionable request.
 
 ---
 
