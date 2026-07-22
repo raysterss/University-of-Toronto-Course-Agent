@@ -98,6 +98,14 @@ cases run against the real TokenHub model:
 | Unverified course handling | verification_uncertainty | ✅ PASS |
 | Clarification action | insufficient_information | ✅ PASS |
 
+Latest local Core-5 run: **Rule 5/5 PASS** and **LLM Judge 5/5 PASS**.
+The evaluation pipeline combines deterministic behavior checks with an
+LLM Judge review, including validation/retry handling for malformed judge
+JSON. Recent grounding safeguards cover missing `completed_courses`
+clarification, avoiding prerequisite checks with empty course histories,
+checking term availability when a term is requested, and not inventing
+prerequisite course codes absent from tool observations.
+
 > Core-5 is a small curated evaluation set (5 of 34 cases). It is not
 > proof of production readiness. LLM Judge scores are non-deterministic
 > and may vary between runs.
