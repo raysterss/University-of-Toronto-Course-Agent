@@ -895,6 +895,37 @@
         "Invented prerequisite details not supported by tool observations.",
         "Conflates course availability with student eligibility."
       ]
+    },
+
+    {
+      "case_id": "audit_program_progress_basic",
+      "category": "program_audit",
+      "title": "Basic ASMAJ1446A program progress audit",
+      "description": "A student with completed first-year CS, math, and statistics courses asks for a program-progress audit. The agent should call audit_program_progress and summarize the results without inventing official conclusions.",
+      "student_profile": {
+        "year": 2,
+        "program": "Cognitive Science Major — Computational Cognition Stream",
+        "target_term": "Fall"
+      },
+      "completed_courses": ["COG100H1", "CSC108H1", "CSC148H1", "MAT135H1", "MAT136H1", "STA237H1"],
+      "user_query": "I have completed COG100H1, CSC108H1, CSC148H1, MAT135H1, MAT136H1, and STA237H1. What requirements have I completed, what am I still missing, and what should I review for the ASMAJ1446A Computational Cognition Stream?",
+      "expected_tools": ["audit_program_progress"],
+      "expected_behaviors": [
+        "Calls audit_program_progress with the student's completed_courses.",
+        "Summarizes completed or provisionally completed requirements.",
+        "Summarizes missing or not-started requirements.",
+        "Mentions manual review / needs official verification when present in the audit.",
+        "Mentions priority items or next factual requirement items from the audit.",
+        "Does not invent official Degree Explorer results.",
+        "Does not make definitive completion claims for requirements marked manual_review_needed."
+      ],
+      "failure_conditions": [
+        "Calls only recommendation tools instead of audit_program_progress.",
+        "Ignores completed_courses.",
+        "Claims the audit is official or equivalent to Degree Explorer.",
+        "Invents completed requirements not supported by the audit observation.",
+        "Gives personalized academic advice not grounded in the audit."
+      ]
     }
   ]
 }

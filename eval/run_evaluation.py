@@ -321,9 +321,9 @@ def _check_one_behavior(
     checks: list[tuple[bool, str]] = []
 
     # --- Tool-calling checks ---
-    all_tools = ["check_exclusions", "check_prerequisites",
-                 "check_term_availability", "get_course_details",
-                 "get_course_metadata_status",
+    all_tools = ["audit_program_progress", "check_exclusions",
+                 "check_prerequisites", "check_term_availability",
+                 "get_course_details", "get_course_metadata_status",
                  "recommend_courses_for_requirement"]
     for tool in all_tools:
         if tool in lowered:
@@ -359,9 +359,11 @@ def _check_one_behavior(
         )
 
     # --- Verification warning ---
-    if any(kw in lowered for kw in [
-        "verification", "needs_official", "calendar_verified",
-    ]):
+    # Skip when the new audit manual-review check handles it.
+    if ("audit" not in lowered
+            and any(kw in lowered for kw in [
+                "verification", "needs_official", "calendar_verified",
+            ])):
         checks.append(
             (signals["contains_verification"],
              "verification keywords present"
@@ -419,6 +421,10 @@ def _check_one_behavior(
         )
 
     # --- Eligibility status ---
+    # Skip when the behavior is about audit/manual-review wording
+    # (the new audit check handles those patterns).
+    _is_audit_behavior = ("audit" in lowered
+                          or "does not make definitive" in lowered)
     _has_standalone_eligible = (
         "eligible" in lowered
         and "not eligible" not in lowered
@@ -430,7 +436,7 @@ def _check_one_behavior(
         or "manual_review_needed" in lowered
         or _has_standalone_eligible
     )
-    if _triggers_elig:
+    if _triggers_elig and not _is_audit_behavior:
         expected = []
         if "not_eligible" in lowered:
             expected.append("not_eligible")
@@ -628,6 +634,94 @@ def _check_one_behavior(
              "no course recommendations given"
              if no_advice
              else "course recommendations found")
+        )
+
+    # --- audit: calls audit_program_progress with completed_courses ---
+    if "audit_program_progress" in lowered and "completed_courses" in lowered:
+        in_tools = "audit_program_progress" in tools_called
+        args = signals.get("tool_arguments", [])
+        has_cc = any("completed_courses" in a for a in args)
+        checks.append(
+            (in_tools and has_cc,
+             f"audit called: {in_tools}, completed_courses in args: {has_cc}")
+        )
+
+    # --- audit: summarizes completed/provisionally completed ---
+    if ("summarize" in lowered or "summarizes" in lowered) and \
+       ("completed" in lowered or "provisionally" in lowered):
+        has_completed = "completed" in combined
+        has_provisional = ("provisionally completed" in combined
+                           or "requires review" in combined
+                           or "manual_review_needed" in combined)
+        checks.append(
+            (has_completed and has_provisional,
+             f"completed mentioned: {has_completed}, "
+             f"provisional/review mentioned: {has_provisional}")
+        )
+
+    # --- audit: summarizes missing/not-started ---
+    if ("summarize" in lowered or "summarizes" in lowered) and \
+       ("missing" in lowered or "not-started" in lowered
+        or "not started" in lowered):
+        has_missing = ("missing" in combined or "not_started" in combined
+                        or "not started" in combined)
+        checks.append(
+            (has_missing,
+             "missing/not-started mentioned"
+             if has_missing
+             else "missing/not-started NOT mentioned")
+        )
+
+    # --- audit: mentions manual review / official verification ---
+    if ("manual review" in lowered and "official" in lowered) \
+       or "needs_official_verification" in lowered \
+       or ("manual review" in lowered and "audit" in lowered) \
+       or ("verify" in lowered and "audit" in lowered):
+        has_manual = ("manual_review_needed" in combined
+                       or "manual review" in combined
+                       or "requires review" in combined)
+        has_official = ("official verification" in combined
+                         or "verify" in combined
+                         or "official sources" in combined
+                         or "academic advising" in combined)
+        checks.append(
+            (has_manual and has_official,
+             f"manual/review: {has_manual}, official/verify: {has_official}")
+        )
+
+    # --- audit: mentions priority items ---
+    if "priority item" in lowered or "factual requirement" in lowered:
+        has_priority = ("priority item" in combined
+                         or "review_required" in combined
+                         or "factual requirement" in combined)
+        has_section = ("summary of" in combined and "action" in combined)
+        checks.append(
+            (has_priority or has_section,
+             "priority items mentioned"
+             if has_priority or has_section
+             else "priority items NOT mentioned")
+        )
+
+    # --- audit: does not invent official Degree Explorer results ---
+    if ("does not invent" in lowered and "official" in lowered
+        and "degree explorer" in lowered.lower()) \
+       or ("does not make" in lowered and "definitive" in lowered
+           and "completion" in lowered):
+        # Affirmative claim = "this IS an official Degree Explorer"
+        # Negative disclaimer = "this is NOT an official" — that's correct.
+        affirmative = ("is an official" in combined.lower()
+                       or "equivalent to degree explorer" in combined.lower()
+                       or "replaces degree explorer" in combined.lower())
+        no_official_claim = not affirmative
+        has_disclaimer = ("not an official" in combined
+                           or "not official" in combined
+                           or "official confirmation" in combined
+                           or "verify with" in combined.lower()
+                           or "academic advising" in combined.lower())
+        checks.append(
+            (no_official_claim and has_disclaimer,
+             f"no official claim: {no_official_claim}, "
+             f"has disclaimer: {has_disclaimer}")
         )
 
     # Fallback: if no specific checks were generated, mark as unchecked.

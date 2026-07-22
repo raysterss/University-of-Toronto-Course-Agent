@@ -1778,3 +1778,94 @@ def test_no_course_advice_before_info_fails_with_recommendation():
         signals,
     )
     assert passed is False, f"Expected FAIL, got: {ev}"
+
+
+# =========================================================================
+# audit program-progress behavior checks
+# =========================================================================
+
+
+def _audit_signals(**overrides) -> dict:
+    base = {
+        "thought": "...",
+        "tool_called": "audit_program_progress",
+        "observation": "Program audit...",
+        "steps": [{
+            "thought": "...",
+            "tool_called": "audit_program_progress",
+            "arguments": {"completed_courses": ["COG100H1", "CSC108H1"]},
+            "observation": "Audit results...",
+        }],
+        "final_answer": "Your audit shows completed requirements...",
+    }
+    base.update(overrides)
+    return extract_signals(base)
+
+
+def test_audit_calls_tool_with_completed_courses_passes():
+    from eval.run_evaluation import _check_one_behavior
+    passed, ev = _check_one_behavior(
+        "Calls audit_program_progress with the student's completed_courses.",
+        _audit_signals(),
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_audit_calls_tool_with_completed_courses_fails():
+    from eval.run_evaluation import _check_one_behavior
+    signals = _audit_signals(
+        tool_called="check_prerequisites",
+        steps=[{"thought": "...", "tool_called": "check_prerequisites",
+                "arguments": {"course_code": "CSC311H1"},
+                "observation": "..."}],
+    )
+    passed, ev = _check_one_behavior(
+        "Calls audit_program_progress with the student's completed_courses.",
+        signals,
+    )
+    assert passed is False, f"Expected FAIL, got: {ev}"
+
+
+def test_audit_summarizes_completed_passes():
+    from eval.run_evaluation import _check_one_behavior
+    passed, ev = _check_one_behavior(
+        "Summarizes completed or provisionally completed requirements.",
+        _audit_signals(final_answer="First-year is completed but requires review."),
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_audit_summarizes_missing_passes():
+    from eval.run_evaluation import _check_one_behavior
+    passed, ev = _check_one_behavior(
+        "Summarizes missing or not-started requirements.",
+        _audit_signals(final_answer="Second-year is not started. You are missing COG200H1."),
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_audit_manual_review_official_passes():
+    from eval.run_evaluation import _check_one_behavior
+    passed, ev = _check_one_behavior(
+        "Mentions manual review / needs official verification when present in the audit.",
+        _audit_signals(final_answer="Math pathway requires manual review. Verify with official sources."),
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_audit_priority_items_passes():
+    from eval.run_evaluation import _check_one_behavior
+    passed, ev = _check_one_behavior(
+        "Mentions priority items or next factual requirement items from the audit.",
+        _audit_signals(final_answer="Priority items: review_required for first_year_math_pathway."),
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
+
+
+def test_audit_does_not_invent_official_passes():
+    from eval.run_evaluation import _check_one_behavior
+    passed, ev = _check_one_behavior(
+        "Does not invent official Degree Explorer results.",
+        _audit_signals(final_answer="This is not an official Degree Explorer result. Verify with academic advising before enrolling."),
+    )
+    assert passed is True, f"Expected PASS, got: {ev}"
