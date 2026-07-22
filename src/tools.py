@@ -103,6 +103,48 @@ def normalize_course_code(course_code: str) -> str:
     return course_code.strip().upper()
 
 
+def resolve_short_course_codes(
+    course_codes: list[str],
+) -> dict[str, list[str]]:
+    """Resolve short course codes to full catalog codes.
+
+    For each code without a suffix (H1, Y1, H5, etc.), try appending
+    ``H1`` then ``Y1`` to find a match in the course catalog.
+
+    Args:
+        course_codes: Raw course-code strings.
+
+    Returns:
+        A dict with keys ``resolved``, ``unresolved``, and
+        ``already_full``.
+    """
+    from src.tools import load_courses
+
+    catalog = {c["course_code"].upper() for c in load_courses()}
+    resolved: dict[str, str] = {}
+    unresolved: list[str] = []
+    already_full: list[str] = []
+
+    for code in course_codes:
+        nc = normalize_course_code(code)
+        if nc in catalog:
+            already_full.append(nc)
+            continue
+        for suffix in ("H1", "Y1"):
+            candidate = nc + suffix
+            if candidate in catalog:
+                resolved[nc] = candidate
+                break
+        else:
+            unresolved.append(nc)
+
+    return {
+        "resolved": resolved,
+        "unresolved": unresolved,
+        "already_full": already_full,
+    }
+
+
 def summarize_catalog_quality() -> dict:
     """Produce a developer-facing summary of catalog data quality.
 

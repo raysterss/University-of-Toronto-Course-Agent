@@ -660,6 +660,22 @@ class CoursePlanningAgent:
             f"The student's completed courses are: {completed}\n"
             "Always use these exact completed courses — do not "
             "invent or modify them.\n\n"
+            "## Default Program\n\n"
+            "ASMAJ1446A is the Cognitive Science Major — "
+            "Computational Cognition Stream.  It is NOT a "
+            "Computer Science program.  Never say \"Computer "
+            "Science Major\" or \"CS program.\"  "
+            "Do NOT ask which program or stream the student is "
+            "in for normal planning questions.  Only ask about "
+            "program if the student explicitly mentions a "
+            "different program.\n\n"
+            "## Planning Queries with Completed Courses\n\n"
+            'When the student has provided completed courses and asks '
+            'a planning question such as "what should I take next '
+            'year," "help me plan," "what am I missing," or "plan my '
+            'year," call audit_program_progress first to identify '
+            "requirement gaps.  Only then suggest stream-pool or "
+            "interest-based options if the student asks.\n\n"
             "## Multi-Part Query Example\n\n"
             "For a query with BOTH eligibility AND a target "
             "term, check prerequisites first, then term "
@@ -758,9 +774,8 @@ class CoursePlanningAgent:
             "```json\n"
             "{\n"
             '  "action": "clarify",\n'
-            '  "question": "Which courses have you completed, what '
-            "program or stream are you in, and which term are you "
-            'planning for?"\n'
+            '  "question": "Which courses have you completed so far? '
+            'I can also check which term you are planning for."\n'
             "}\n"
             "```\n\n"
             "Eligibility question without completed courses:\n"
@@ -1103,6 +1118,26 @@ class CoursePlanningAgent:
                     "is not an official Degree Explorer result.  "
                     "Preserve unknown, unverified, exclusion, and "
                     "overlap warnings from the audit output.\n\n"
+                    "## Student-Facing Style\n\n"
+                    "Use conversational, student-friendly language.  "
+                    "Do NOT write a formal audit report with tables "
+                    "unless the student explicitly asks for a detailed "
+                    "audit, report, or table.  Start with a short "
+                    "natural-language summary.  Mention the most "
+                    "important requirement gaps first.\n\n"
+                    "Translate internal labels into plain language:\n"
+                    '- "manual_review_needed" → "this needs official '
+                    'review" or "I cannot confirm this automatically"\n'
+                    '- "not_started" → "you still appear to need '
+                    'this requirement"\n'
+                    '- "priority_items" → "next things to check"\n'
+                    '- "needs_official_verification" → "needs official '
+                    'confirmation"\n\n'
+                    "Do NOT use headings like \"Audit Overview\", "
+                    "\"Rules Met\", or \"Priority Actions\" in casual "
+                    "answers.  For planning questions, mention "
+                    "requirement gaps before suggesting elective or "
+                    "AI/stream-pool courses.\n\n"
                     "## General Rules\n\n"
                     "State only claims supported by the observations. "
                     "Do not invent prerequisites, term offerings, or "

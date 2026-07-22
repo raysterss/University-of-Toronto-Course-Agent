@@ -355,6 +355,38 @@ class TestReasoningPrompt:
         prompt = self._get_system_prompt(agent, "What requirements have I completed?")
         assert "audit_program_progress" in prompt.lower()
 
+    def test_prompt_defaults_to_asma_program(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "What should I take?")
+        assert "ASMAJ1446A" in prompt
+        assert "do not ask" in prompt.lower() and "program" in prompt.lower()
+
+    def test_prompt_planning_query_triggers_audit(self):
+        agent = CoursePlanningAgent(completed_courses=["COG100H1", "CSC108H1"])
+        prompt = self._get_system_prompt(agent, "What should I take next year?")
+        lowered = prompt.lower()
+        assert "audit_program_progress" in lowered
+        assert "requirement gaps" in lowered
+
+    def test_prompt_clarify_does_not_ask_program(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "What course should I take?")
+        # The prompt tells the model NOT to ask about program/stream.
+        assert "do not ask" in prompt.lower()
+        assert "which program" in prompt.lower() or "about program" in prompt.lower()
+
+    def test_prompt_still_clarifies_for_missing_courses(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "Plan my year.")
+        assert "clarify" in prompt.lower()
+        assert "courses" in prompt.lower()
+
+    def test_prompt_corrects_cog_sci_not_cs_name(self):
+        agent = CoursePlanningAgent()
+        prompt = self._get_system_prompt(agent, "What is my program?")
+        assert "Cognitive Science" in prompt
+        assert "not a" in prompt.lower() or "NOT" in prompt
+
     def test_prompt_prereq_still_maps_to_check_prerequisites(self):
         agent = CoursePlanningAgent()
         prompt = self._get_system_prompt(agent, "Can I take CSC384H1?")
@@ -1702,6 +1734,60 @@ class TestMultiStepReAct:
                 break
         lowered = system_msg.lower()
         assert "may be affected" in lowered or "may affect" in lowered
+
+    def test_answer_prompt_translates_internal_labels(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": []}}',
+                "Audit.",
+            ]),
+        )
+        agent.handle_request("Audit.", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "needs official review" in lowered or "i cannot confirm" in lowered
+        assert "next things to check" in lowered
+
+    def test_answer_prompt_discourages_audit_report_style(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": []}}',
+                "Audit.",
+            ]),
+        )
+        agent.handle_request("Audit.", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "do not write a formal audit report" in lowered or \
+               "conversational" in lowered
+
+    def test_answer_prompt_gaps_before_electives(self):
+        agent = CoursePlanningAgent(
+            model=_SequenceModel([
+                '{"tool_name": "audit_program_progress", '
+                '"arguments": {"completed_courses": []}}',
+                "Audit.",
+            ]),
+        )
+        agent.handle_request("Audit.", max_tool_steps=1)
+        system_msg = ""
+        for m in agent.model.calls[-1]:
+            if m["role"] == "system":
+                system_msg = m["content"]
+                break
+        lowered = system_msg.lower()
+        assert "requirement gaps" in lowered or "core" in lowered
+        assert "elective" in lowered or "stream-pool" in lowered
 
     # -- backward compatible flat keys ------------------------------------
 

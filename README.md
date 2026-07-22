@@ -85,7 +85,7 @@ performed by deterministic Python logic — not by the model.
 
 ## Reliability and evaluation
 
-The current test suite passes locally with **591 automated tests** (`python3 -m pytest`).
+The current test suite passes locally with **611 automated tests** (`python3 -m pytest`).
 
 **Core-5 evaluation batch** — a small curated set of 5 representative
 cases run against the real TokenHub model:
@@ -140,6 +140,7 @@ prerequisite course codes absent from tool observations.
 │   └── reports/                      # Generated evaluation reports
 ├── scripts/
 │   ├── smoke_test_tokenhub.py        # Model connectivity test
+│   ├── chat_agent_tokenhub.py       # Interactive TokenHub chat CLI
 │   ├── smoke_test_agent_tokenhub.py  # Single-step agent test
 │   ├── smoke_test_multistep_tokenhub.py  # Multi-step agent test
 │   └── smoke_test_program_audit_tokenhub.py  # Program-audit agent test
@@ -170,7 +171,7 @@ cp .env.example .env
 
 ```bash
 python3 -m pytest
-# 591 passed
+# 611 passed
 ```
 
 All tests use MockModel — no API keys or network calls required.

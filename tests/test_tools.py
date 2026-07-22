@@ -15,6 +15,7 @@ from src.tools import (
     _match_interests,
     load_courses,
     load_programs,
+    resolve_short_course_codes,
     load_default_program,
     normalize_course_code,
     get_course_details,
@@ -713,3 +714,36 @@ class TestShortKeywordMatching:
             tag, [], interests=["AI"]
         )
         assert len(with_interests) == len(no_interests)
+
+
+# =========================================================================
+# resolve_short_course_codes — short-code normalization
+# =========================================================================
+
+
+class TestResolveShortCourseCodes:
+    """Verify short course codes are resolved to full catalog codes."""
+
+    def test_csc108_resolves_to_h1(self):
+        result = resolve_short_course_codes(["CSC108"])
+        assert "CSC108" in result["resolved"]
+        assert result["resolved"]["CSC108"] == "CSC108H1"
+
+    def test_mat135_resolves_to_h1(self):
+        result = resolve_short_course_codes(["MAT135"])
+        assert result["resolved"]["MAT135"] == "MAT135H1"
+
+    def test_already_full_code_unchanged(self):
+        result = resolve_short_course_codes(["CSC108H1"])
+        assert "CSC108H1" in result["already_full"]
+
+    def test_unknown_short_code_unresolved(self):
+        result = resolve_short_course_codes(["COG250"])
+        assert "COG250" in result["unresolved"]
+
+    def test_mixed_codes_partial_resolution(self):
+        result = resolve_short_course_codes(["CSC108", "MAT135", "COG250", "CSC148H1"])
+        assert result["resolved"]["CSC108"] == "CSC108H1"
+        assert result["resolved"]["MAT135"] == "MAT135H1"
+        assert "COG250" in result["unresolved"]
+        assert "CSC148H1" in result["already_full"]

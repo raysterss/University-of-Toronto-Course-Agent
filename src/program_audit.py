@@ -96,6 +96,15 @@ def normalize_completed_courses(
             seen.add(nc)
             normalized.append(nc)
 
+    # Resolve short codes (e.g. CSC108 -> CSC108H1).
+    from src.tools import resolve_short_course_codes  # noqa: E402
+    resolution = resolve_short_course_codes(normalized)
+    # Replace short codes with resolved full codes.
+    resolved_map = resolution["resolved"]
+    normalized = [
+        resolved_map.get(c, c) for c in normalized
+    ]
+
     unknown: list[str] = []
     unverified: list[str] = []
     for nc in normalized:
@@ -104,6 +113,11 @@ def normalize_completed_courses(
             unknown.append(nc)
         elif course.get("verification_status") != "calendar_verified":
             unverified.append(nc)
+
+    # Include unresolved short codes in the unknown list.
+    for uc in resolution["unresolved"]:
+        if uc not in unknown:
+            unknown.append(uc)
 
     return {
         "raw_completed_courses": raw,
